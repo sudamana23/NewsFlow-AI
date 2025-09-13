@@ -34,7 +34,7 @@ tunnel: YOUR_TUNNEL_UUID_HERE
 credentials-file: /Users/YOUR_USERNAME/.cloudflared/YOUR_TUNNEL_UUID.json
 
 ingress:
-  - hostname: news.misterbig.org
+  - hostname: 
     service: http://localhost:8000
   - service: http_status:404
 EOF
@@ -54,7 +54,7 @@ echo "   sudo launchctl start com.cloudflare.cloudflared"
 
 echo ""
 echo "✅ Once complete, your news digest will be available at:"
-echo "   https://news.misterbig.org"
+echo "   https://
 
 echo ""
 echo "💡 Need help? Check Cloudflare Tunnel docs:"
