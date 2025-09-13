@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if digest %}
+    {{ digest.digest_type.title() }} Digest - {{ digest_cet.strftime('%B %d, %Y %H:%M') }} CET
+{% else %}
+    News Digest
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div id="digest-content">
+    {% if digest %}
+    <!-- Digest Header -->
+    <div class="bg-white rounded-lg shadow mb-6 p-6">
+        <div class="flex justify-between items-start">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">
+                    {{ digest.digest_type.replace('_', ' ').title() }} Digest
+                </h2>
+                <p class="text-gray-600">
+                    {{ digest_cet.strftime('%A, %B %d, %Y at %H:%M') }} CET
+                </p>
+                <p class="text-sm text-gray-500 mt-1">
+                    {{ digest.stories_count }} stories across {{ categories|length }} categories
+                </p>
+            </div>
+            <div class="flex items-center space-x-2">
+                {% if is_deep_read %}
+                <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                    Deep Read
+                </span>
+                {% endif %}
+                <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                    {{ digest.stories_count }} stories
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories Overview (for deep reads) -->
+    {% if is_deep_read and categories|length > 1 %}
+    <div class="bg-white rounded-lg shadow mb-6 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">📊 Overview</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {% for category, cat_articles in categories.items() %}
+            <div class="text-center p-3 bg-gray-50 rounded">
+                <div class="text-2xl font-bold text-gray-900">{{ cat_articles|length }}</div>
+                <div class="text-sm text-gray-600">{{ category.replace('_', ' ').title() }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Articles by Category -->
+    {% for category, cat_articles in categories.items() %}
+    <div class="bg-white rounded-lg shadow mb-6 category-{{ category }}">
+        <div class="p-6">
+            <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                {% if category == 'ukraine' %}🇺🇦
+                {% elif category == 'gaza' %}🇵🇸
+                {% elif category == 'ai_data' %}🤖
+                {% elif category == 'technology' %}💻
+                {% elif category == 'politics' %}🏛️
+                {% elif category == 'finance' %}💰
+                {% elif category == 'switzerland' %}🇨🇭
+                {% else %}🌍
+                {% endif %}
+                <span class="ml-2">{{ category.replace('_', ' ').title() }}</span>
+                <span class="ml-auto text-sm font-normal text-gray-500">({{ cat_articles|length }})</span>
+            </h3>
+            
+            <div class="space-y-4">
+                {% for item in cat_articles %}
+                {% set article = item.article %}
+                <article class="border-b border-gray-100 pb-4 last:border-b-0 last:pb-0">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="text-lg font-medium text-gray-900 leading-tight">
+                            <a href="{{ article.url }}" 
+                               target="_blank" 
+                               rel="noopener noreferrer"
+                               class="hover:text-blue-600 hover:underline">
+                                {{ article.title }}
+                            </a>
+                        </h4>
+                        {% if article.engagement_score > 0 %}
+                        <span class="text-xs text-gray-500 ml-2 flex-shrink-0">
+                            🔥 {{ "%.1f"|format(article.engagement_score) }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if article.summary %}
+                    <p class="text-gray-700 mb-2 leading-relaxed">{{ article.summary }}</p>
+                    {% endif %}
+                    
+                    <div class="flex justify-between items-center text-sm text-gray-500">
+                        <span class="font-medium">{{ article.source }}</span>
+                        <div class="flex items-center space-x-3">
+                            {% if item.published_cet %}
+                            <span>{{ item.published_cet.strftime('%H:%M') }} CET</span>
+                            {% endif %}
+                            <a href="{{ article.url }}" 
+                               target="_blank" 
+                               rel="noopener noreferrer"
+                               class="text-blue-600 hover:text-blue-800">
+                                Read more →
+                            </a>
+                        </div>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <!-- No Digest Available -->
+    <div class="bg-white rounded-lg shadow p-8 text-center">
+        <div class="text-6xl mb-4">📰</div>
+        <h2 class="text-xl font-semibold text-gray-900 mb-2">No Digest Available</h2>
+        <p class="text-gray-600 mb-4">{{ message }}</p>
+        <a href="/refresh" 
+           onclick="showRefreshLoading(this)"
+           class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            🔄 Collect News Now
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Footer -->
+<div class="mt-8 text-center text-gray-500 text-sm">
+    <p>
+        Auto-refresh every 5 minutes • 
+        <a href="/archive" class="text-blue-600 hover:underline">View Archive</a>
+    </p>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}News Archive{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow">
+    <div class="p-6 border-b border-gray-200">
+        <h2 class="text-2xl font-bold text-gray-900">📚 News Archive</h2>
+        <p class="text-gray-600 mt-1">Browse past digests</p>
+    </div>
+    
+    <div class="p-6">
+        <!-- Time period selector -->
+        <div class="mb-6 flex space-x-2">
+            <a href="/archive?days=1" 
+               class="px-3 py-2 text-sm rounded {% if days == 1 %}bg-blue-600 text-white{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %}">
+                Today
+            </a>
+            <a href="/archive?days=7" 
+               class="px-3 py-2 text-sm rounded {% if days == 7 %}bg-blue-600 text-white{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %}">
+                7 days
+            </a>
+            <a href="/archive?days=30" 
+               class="px-3 py-2 text-sm rounded {% if days == 30 %}bg-blue-600 text-white{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %}">
+                30 days
+            </a>
+        </div>
+
+        {% if digests %}
+        <!-- Digest list -->
+        <div class="space-y-4">
+            {% for item in digests %}
+            {% set digest = item.digest %}
+            {% set created_at_cet = item.created_at_cet %}
+            <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="font-semibold text-gray-900">
+                            <a href="/?digest_type={{ digest.id }}" class="hover:text-blue-600">
+                                {{ digest.digest_type.replace('_', ' ').title() }} Digest
+                            </a>
+                        </h3>
+                        <p class="text-sm text-gray-600">
+                            {{ created_at_cet.strftime('%A, %B %d, %Y at %H:%M') }} CET
+                        </p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-sm font-medium text-gray-900">{{ digest.stories_count }} stories</span>
+                        <div class="text-xs text-gray-500">
+                            {% if digest.digest_type == 'morning' %}🌅 Morning Read
+                            {% elif digest.digest_type == 'evening' %}🌆 Evening Read
+                            {% else %}⏰ Hourly Update
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <p class="text-gray-500">No digests found for the selected period.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
