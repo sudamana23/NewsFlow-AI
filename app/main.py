@@ -317,6 +317,11 @@ async def trigger_refresh():
     try:
         logger.info("🔄 Manual refresh triggered - starting collection...")
         
+        # Reload sources configuration first
+        from app.config import reload_all_sources
+        reload_all_sources()
+        logger.info("✅ Sources configuration reloaded")
+        
         # Import here to avoid circular imports
         from app.scheduler.tasks import NewsScheduler
         scheduler = NewsScheduler()
@@ -336,6 +341,7 @@ async def trigger_refresh():
         # Return success response that will redirect
         return {"status": "success", "message": "News refreshed successfully!", "redirect": "/"}
         
+        
     except Exception as e:
         logger.error(f"❌ Error in manual refresh: {e}")
         return {"status": "error", "message": f"Refresh failed: {str(e)}"}
@@ -345,6 +351,11 @@ async def refresh_page():
     """Simple refresh endpoint that redirects back to main page"""
     try:
         logger.info("🔄 Page refresh via GET - starting collection...")
+        
+        # Reload sources configuration first
+        from app.config import reload_all_sources
+        reload_all_sources()
+        logger.info("✅ Sources configuration reloaded")
         
         # Import here to avoid circular imports  
         from app.scheduler.tasks import NewsScheduler
@@ -365,6 +376,343 @@ async def refresh_page():
         # Still redirect even if there's an error
         return RedirectResponse(url="/", status_code=302)
 
+@app.get("/debug/pipeline-test")
+async def pipeline_test():
+    """Test the full pipeline from collection to database"""
+    try:
+        from app.scrapers.mainstream import MainstreamScraper
+        from app.config import get_mainstream_sources
+        from app.pipeline.streams import news_stream
+        from app.pipeline.summarizer import summarizer
+        from app.database import AsyncSessionLocal
+        from app.models import Article
+        
+        results = {"steps": []}
+        
+        # Step 1: Collection
+        results["steps"].append("1. Testing article collection...")
+        sources = get_mainstream_sources()
+        scraper = MainstreamScraper()
+        
+        async with scraper:
+            articles = await scraper.fetch_rss(sources[0])
+            if articles:
+                test_article = articles[0]  # Take first article
+                results["steps"].append(f"✅ Collected article: {test_article['title'][:60]}...")
+            else:
+                results["steps"].append("❌ No articles collected")
+                return results
+        
+        # Step 2: Redis stream
+        results["steps"].append("2. Testing Redis stream...")
+        try:
+            if news_stream.redis:
+                message_id = await news_stream.add_article(test_article)
+                if message_id:
+                    results["steps"].append(f"✅ Added to Redis: {message_id}")
+                else:
+                    results["steps"].append("❌ Failed to add to Redis")
+            else:
+                results["steps"].append("❌ Redis not connected")
+        except Exception as e:
+            results["steps"].append(f"❌ Redis error: {str(e)}")
+        
+        # Step 3: Stream processing
+        results["steps"].append("3. Testing stream processing...")
+        try:
+            stream_articles = await news_stream.read_articles(count=1)
+            if stream_articles:
+                stream_article = stream_articles[0]
+                results["steps"].append(f"✅ Read from stream: {stream_article.get('title', 'No title')[:60]}...")
+                
+                # Step 4: Categorization
+                results["steps"].append("4. Testing categorization...")
+                category, summary = await summarizer.categorize_and_summarize(stream_article)
+                results["steps"].append(f"✅ Categorized as: {category}")
+                results["steps"].append(f"✅ Summary: {summary[:60]}...")
+                
+                # Step 5: Database save
+                results["steps"].append("5. Testing database save...")
+                async with AsyncSessionLocal() as db:
+                    article = Article(
+                        url=stream_article["url"],
+                        title=stream_article["title"],
+                        content=stream_article.get("content", ""),
+                        summary=summary,
+                        source=stream_article["source"],
+                        source_type="test",
+                        category=category,
+                        is_processed=True
+                    )
+                    db.add(article)
+                    await db.commit()
+                    results["steps"].append(f"✅ Saved to database: ID {article.id}")
+                    
+                    # Clean up the test article
+                    await news_stream.acknowledge_article(stream_article["stream_id"])
+                    results["steps"].append("✅ Acknowledged stream message")
+            else:
+                results["steps"].append("❌ No articles in stream")
+        except Exception as e:
+            results["steps"].append(f"❌ Processing error: {str(e)}")
+        
+        return {"status": "ok", "pipeline_test": results}
+        
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "message": str(e),
+            "traceback": traceback.format_exc()
+        }
+
+@app.get("/debug/simple-collection")
+async def simple_collection():
+    """Test simple collection without Redis/DB complexity"""
+    try:
+        from app.scrapers.mainstream import MainstreamScraper
+        from app.config import get_mainstream_sources
+        
+        # Get sources
+        sources = get_mainstream_sources()
+        
+        if not sources:
+            return {"status": "error", "message": "No mainstream sources configured"}
+        
+        # Test first source only
+        scraper = MainstreamScraper()
+        async with scraper:
+            # Try to scrape just the first source
+            test_source = sources[0]
+            articles = await scraper.fetch_rss(test_source)
+            
+            return {
+                "status": "ok",
+                "test_source": test_source,
+                "articles_scraped": len(articles),
+                "sample_articles": [
+                    {
+                        "title": article.get("title", "No title")[:80],
+                        "source": article.get("source", "No source"),
+                        "url": article.get("url", "No URL")[:60] + "..."
+                    } for article in articles[:3]
+                ],
+                "total_sources_configured": len(sources)
+            }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error", 
+            "message": str(e),
+            "traceback": traceback.format_exc()
+        }
+
+@app.get("/debug/collection")
+async def debug_collection():
+    """Debug news collection process"""
+    try:
+        from app.scheduler.tasks import NewsScheduler
+        from app.config import get_mainstream_sources, get_tech_sources, get_swiss_sources, get_reddit_subreddits
+        
+        # Check sources configuration
+        mainstream_sources = get_mainstream_sources()
+        tech_sources = get_tech_sources()
+        swiss_sources = get_swiss_sources()
+        reddit_sources = get_reddit_subreddits()
+        
+        # Test a single scraper
+        from app.scrapers.mainstream import MainstreamScraper
+        
+        test_results = {
+            "sources_config": {
+                "mainstream_count": len(mainstream_sources),
+                "tech_count": len(tech_sources),
+                "swiss_count": len(swiss_sources),
+                "reddit_count": len(reddit_sources),
+                "sample_mainstream": mainstream_sources[:3] if mainstream_sources else [],
+            },
+            "scraper_test": None,
+            "collection_test": None
+        }
+        
+        # Test mainstream scraper
+        try:
+            scraper = MainstreamScraper()
+            async with scraper:
+                # Try to scrape just one source
+                if mainstream_sources:
+                    articles = await scraper.fetch_rss(mainstream_sources[0])
+                    test_results["scraper_test"] = {
+                        "source": mainstream_sources[0],
+                        "articles_found": len(articles),
+                        "sample_titles": [article.get("title", "No title")[:60] for article in articles[:3]]
+                    }
+        except Exception as e:
+            test_results["scraper_test"] = {"error": str(e)}
+        
+        # Test full collection process
+        try:
+            scheduler = NewsScheduler()
+            # Don't actually run collection, just check if it would work
+            test_results["collection_test"] = "Collection process accessible"
+        except Exception as e:
+            test_results["collection_test"] = {"error": str(e)}
+        
+        return {
+            "status": "ok",
+            "debug_info": test_results
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/debug/test-categorization")
+async def test_categorization():
+    """Test categorization on sample articles"""
+    try:
+        from app.pipeline.summarizer import summarizer
+        
+        # Test articles with obvious categories
+        test_articles = [
+            {
+                "title": "Ukraine receives new military aid from NATO allies",
+                "content": "Ukraine will receive additional military support from NATO member countries as the conflict with Russia continues.",
+                "url": "https://test.com/ukraine",
+                "source": "Test Source"
+            },
+            {
+                "title": "OpenAI announces GPT-5 with improved capabilities",
+                "content": "OpenAI has revealed details about GPT-5, featuring enhanced artificial intelligence and machine learning capabilities.",
+                "url": "https://test.com/ai",
+                "source": "Test Source"
+            },
+            {
+                "title": "Manchester United defeats Arsenal in Premier League match",
+                "content": "Manchester United secured a 2-1 victory over Arsenal in yesterday's Premier League fixture at Old Trafford.",
+                "url": "https://test.com/football",
+                "source": "Test Source"
+            }
+        ]
+        
+        results = []
+        for article in test_articles:
+            try:
+                category, summary = await summarizer.categorize_and_summarize(article)
+                results.append({
+                    "title": article["title"],
+                    "detected_category": category,
+                    "summary": summary[:100] + "..." if len(summary) > 100 else summary
+                })
+            except Exception as e:
+                results.append({
+                    "title": article["title"],
+                    "error": str(e)
+                })
+        
+        return {
+            "status": "ok",
+            "test_results": results
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/debug/articles")
+async def debug_articles(db: AsyncSession = Depends(get_async_session)):
+    """Debug what articles exist and their categories"""
+    try:
+        # Get all recent articles
+        result = await db.execute(
+            select(Article.id, Article.title, Article.category, Article.source, Article.scraped_at, Article.is_processed)
+            .order_by(desc(Article.scraped_at))
+            .limit(20)
+        )
+        
+        articles = result.all()
+        
+        # Get latest digest info
+        digest_result = await db.execute(
+            select(Digest.id, Digest.created_at, Digest.digest_type, Digest.stories_count)
+            .order_by(desc(Digest.created_at))
+            .limit(1)
+        )
+        
+        latest_digest = digest_result.first()
+        
+        # If digest exists, get its articles
+        digest_articles = []
+        if latest_digest:
+            digest_articles_result = await db.execute(
+                select(Article.title, Article.category, DigestArticle.position)
+                .join(DigestArticle, Article.id == DigestArticle.article_id)
+                .where(DigestArticle.digest_id == latest_digest.id)
+                .order_by(DigestArticle.position)
+            )
+            digest_articles = digest_articles_result.all()
+        
+        return {
+            "status": "ok",
+            "recent_articles": [
+                {
+                    "id": article.id,
+                    "title": article.title[:80],
+                    "category": article.category,
+                    "source": article.source,
+                    "scraped_at": article.scraped_at.isoformat() if article.scraped_at else None,
+                    "is_processed": article.is_processed
+                } for article in articles
+            ],
+            "latest_digest": {
+                "id": latest_digest.id if latest_digest else None,
+                "created_at": latest_digest.created_at.isoformat() if latest_digest else None,
+                "type": latest_digest.digest_type if latest_digest else None,
+                "stories_count": latest_digest.stories_count if latest_digest else 0
+            } if latest_digest else None,
+            "digest_articles": [
+                {
+                    "title": article[0][:80],
+                    "category": article[1],
+                    "position": article[2]
+                } for article in digest_articles
+            ]
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/debug/categories")
+async def debug_categories(db: AsyncSession = Depends(get_async_session)):
+    """Debug category distribution"""
+    try:
+        # Get recent articles and their categories
+        result = await db.execute(
+            select(Article.category, Article.title, Article.source)
+            .order_by(desc(Article.scraped_at))
+            .limit(50)
+        )
+        
+        articles = result.all()
+        
+        # Count by category
+        category_counts = {}
+        category_examples = {}
+        
+        for category, title, source in articles:
+            if category not in category_counts:
+                category_counts[category] = 0
+                category_examples[category] = []
+            
+            category_counts[category] += 1
+            if len(category_examples[category]) < 3:
+                category_examples[category].append({"title": title, "source": source})
+        
+        return {
+            "status": "ok",
+            "total_recent_articles": len(articles),
+            "category_counts": category_counts,
+            "category_examples": category_examples,
+            "expected_categories": ["ukraine", "gaza", "swiss", "europe", "ai", "tech", "crypto", "finance", "science", "health", "politics", "world", "premier_league"]
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.get("/debug/status")
 async def debug_status():
     """Debug system status"""
@@ -380,6 +728,15 @@ async def debug_status():
         # Get Redis info
         redis_info = await news_stream.get_stream_info() if news_stream.redis else {"error": "not connected"}
         
+        # Get LM Studio model info
+        from app.pipeline.summarizer import summarizer
+        model_info = await summarizer.get_model_status()
+        
+        # Get sources info
+        from app.config import source_manager, get_mainstream_sources, get_tech_sources
+        mainstream_count = len(get_mainstream_sources())
+        tech_count = len(get_tech_sources())
+        
         return {
             "status": "ok",
             "database": {
@@ -391,11 +748,19 @@ async def debug_status():
                 "connected": news_stream.redis is not None,
                 "stream_info": redis_info
             },
+            "lm_studio": model_info,
+            "sources": {
+                "mainstream_sources": mainstream_count,
+                "tech_sources": tech_count,
+                "total_enabled": len(source_manager.get_enabled_sources())
+            },
             "components": {
                 "database": "✅ Working",
                 "redis": "✅ Working" if news_stream.redis else "⚠️ Disconnected",
+                "lm_studio": "✅ Working" if model_info.get("is_available") else "⚠️ Disconnected",
                 "scheduler": "✅ Working",
-                "web_interface": "✅ Working"
+                "web_interface": "✅ Working",
+                "sources": f"✅ {len(source_manager.get_enabled_sources())} sources loaded"
             }
         }
     except Exception as e:

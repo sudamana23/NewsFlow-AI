@@ -1,0 +1,245 @@
+# News Digest Agent - Source Configuration
+# Add, remove, or modify news sources here
+
+mainstream_sources:
+  - name: "BBC World"
+    url: "https://feeds.bbci.co.uk/news/world/rss.xml"
+    category: "world"
+    enabled: true
+  - name: "CNN International"
+    url: "https://rss.cnn.com/rss/edition.rss"
+    category: "world" 
+    enabled: true
+  - name: "The Guardian"
+    url: "https://www.theguardian.com/world/rss"
+    category: "world"
+    enabled: true
+  - name: "Financial Times"
+    url: "https://www.ft.com/news-feed"
+    category: "finance"
+    enabled: true
+  # New additions
+  - name: "Reuters World"
+    url: "https://feeds.reuters.com/Reuters/worldNews"
+    category: "world"
+    enabled: true
+  - name: "Associated Press"
+    url: "https://feeds.apnews.com/rss/apf-worldnews"
+    category: "world"
+    enabled: true
+  - name: "NPR News"
+    url: "https://feeds.npr.org/1001/rss.xml"
+    category: "world"
+    enabled: true
+  - name: "Al Jazeera"
+    url: "https://www.aljazeera.com/xml/rss/all.xml"
+    category: "world"
+    enabled: true
+  - name: "Deutsche Welle"
+    url: "https://rss.dw.com/xml/rss-en-all"
+    category: "world" 
+    enabled: true
+
+tech_sources:
+  - name: "Ars Technica"
+    url: "https://arstechnica.com/feed/"
+    category: "tech"
+    enabled: true
+  - name: "The Verge"
+    url: "https://www.theverge.com/rss/index.xml"
+    category: "tech"
+    enabled: true
+  - name: "Hacker News"
+    url: "https://hnrss.org/frontpage"
+    category: "tech"
+    enabled: true
+  - name: "TechCrunch"
+    url: "https://techcrunch.com/feed/"
+    category: "tech"
+    enabled: false  # Disabled by default
+  # New additions
+  - name: "Wired"
+    url: "https://www.wired.com/feed/rss"
+    category: "tech"
+    enabled: true
+  - name: "Engadget"
+    url: "https://www.engadget.com/rss.xml"
+    category: "tech"
+    enabled: true
+  - name: "IEEE Spectrum"
+    url: "https://spectrum.ieee.org/rss/fulltext"
+    category: "tech"
+    enabled: true
+  - name: "Slashdot"
+    url: "http://rss.slashdot.org/Slashdot/slashdotMain"
+    category: "tech"
+    enabled: true
+
+swiss_sources:
+  - name: "NZZ"
+    url: "https://www.nzz.ch/recent.rss"
+    category: "swiss"
+    enabled: true
+  - name: "Tages-Anzeiger"
+    url: "https://www.tagesanzeiger.ch/rss.html"
+    category: "swiss"
+    enabled: true
+  # New additions
+  - name: "SWI swissinfo.ch"
+    url: "https://www.swissinfo.ch/eng/rss"
+    category: "swiss"
+    enabled: true
+  - name: "The Local Switzerland"
+    url: "https://www.thelocal.ch/rss"
+    category: "swiss"
+    enabled: true
+
+ai_sources:
+  - name: "AI News"
+    url: "https://www.artificialintelligence-news.com/feed/"
+    category: "ai"
+    enabled: true
+  - name: "OpenAI Blog"
+    url: "https://openai.com/blog/rss.xml"
+    category: "ai"
+    enabled: true
+  # New additions
+  - name: "MIT Technology Review"
+    url: "https://www.technologyreview.com/feed/"
+    category: "ai"
+    enabled: true
+  - name: "VentureBeat AI"
+    url: "https://venturebeat.com/ai/feed/"
+    category: "ai"
+    enabled: true
+  - name: "The Gradient"
+    url: "https://thegradient.pub/rss/"
+    category: "ai"
+    enabled: true
+  - name: "Towards Data Science"
+    url: "https://towardsdatascience.com/feed"
+    category: "data"
+    enabled: true
+
+finance_sources:
+  - name: "MarketWatch"
+    url: "https://feeds.marketwatch.com/marketwatch/topstories/"
+    category: "finance"
+    enabled: true
+  - name: "Yahoo Finance"
+    url: "https://finance.yahoo.com/news/rssindex"
+    category: "finance"
+    enabled: true
+  - name: "CoinDesk"
+    url: "https://feeds.coindesk.com/bitcoin"
+    category: "crypto"
+    enabled: true
+
+science_sources:
+  - name: "Science Daily"
+    url: "https://www.sciencedaily.com/rss/all.xml"
+    category: "science"
+    enabled: true
+  - name: "NASA News"
+    url: "https://www.nasa.gov/rss/dyn/breaking_news.rss"
+    category: "science"
+    enabled: true
+  - name: "Phys.org"
+    url: "https://phys.org/rss-feed/"
+    category: "science"
+    enabled: true
+
+government_sources:
+  - name: "European Commission"
+    url: "https://ec.europa.eu/commission/presscorner/rss/en/actu_en.xml"
+    category: "politics"
+    enabled: true
+  - name: "UN News"
+    url: "https://news.un.org/feed/subscribe/en/news/all/rss.xml"
+    category: "world"
+    enabled: true
+
+reddit_sources:
+  - name: "r/worldnews"
+    subreddit: "worldnews"
+    category: "world"
+    enabled: true
+  - name: "r/technology" 
+    subreddit: "technology"
+    category: "tech"
+    enabled: true
+  - name: "r/artificial"
+    subreddit: "artificial"
+    category: "ai"
+    enabled: true
+  - name: "r/MachineLearning"
+    subreddit: "MachineLearning"
+    category: "ai"
+    enabled: true
+  - name: "r/ukraine"
+    subreddit: "ukraine"
+    category: "world"
+    enabled: true
+  - name: "r/switzerland"
+    subreddit: "switzerland"
+    category: "swiss"
+    enabled: true
+  # New additions
+  - name: "r/singularity"
+    subreddit: "singularity"
+    category: "ai"
+    enabled: true
+  - name: "r/datascience"
+    subreddit: "datascience"
+    category: "data"
+    enabled: true
+  - name: "r/programming"
+    subreddit: "programming"
+    category: "tech"
+    enabled: true
+  - name: "r/geopolitics"
+    subreddit: "geopolitics"
+    category: "politics"
+    enabled: true
+  - name: "r/Economics"
+    subreddit: "Economics"
+    category: "finance"
+    enabled: true
+  - name: "r/PremierLeague"
+    subreddit: "PremierLeague"
+    category: "premier_league"
+    enabled: true
+  - name: "r/soccer"
+    subreddit: "soccer"
+    category: "premier_league"
+    enabled: true
+
+# Sports sources
+sports_sources:
+  - name: "BBC Sport Football"
+    url: "https://feeds.bbci.co.uk/sport/football/rss.xml"
+    category: "premier_league"
+    enabled: true
+  - name: "Sky Sports Premier League"
+    url: "https://www.skysports.com/rss/football/premier-league"
+    category: "premier_league"
+    enabled: true
+  - name: "ESPN FC"
+    url: "https://www.espn.com/espn/rss/soccer/news"
+    category: "premier_league"
+    enabled: true
+
+# Custom sources - add your own here
+custom_sources:
+  # Example:
+  # - name: "Your Custom Source"
+  #   url: "https://example.com/feed.rss"
+  #   category: "custom"
+  #   enabled: true
+
+# Global settings
+settings:
+  max_articles_per_source: 10
+  update_frequency_minutes: 60
+  respect_robots_txt: true
+  user_agent: "NewsDigestAgent/1.0"

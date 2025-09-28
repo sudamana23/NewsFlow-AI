@@ -12,6 +12,7 @@ services:
       - redis
     volumes:
       - .:/app
+      - ./config:/app/config
     restart: unless-stopped
 
   db:

@@ -1,4 +1,94 @@
-/* Custom styles for News Digest */
+/* NewsFlow-AI - Compact List Design */
+
+/* Base styles */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+    background: #f8f9fa;
+    color: #1a1a1a;
+}
+
+/* Navigation */
+.nav-header {
+    background: white;
+    border-bottom: 1px solid #e5e5e5;
+    padding: 0;
+    margin-bottom: 0;
+}
+
+.nav-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.nav-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 60px;
+}
+
+.nav-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.nav-title a {
+    color: #1a1a1a;
+    text-decoration: none;
+}
+
+.nav-title a:hover {
+    color: #0066cc;
+}
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.nav-link {
+    color: #666;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.nav-link:hover {
+    color: #0066cc;
+}
+
+.refresh-btn {
+    background: #0066cc;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-weight: 500;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    transition: background-color 0.15s ease;
+}
+
+.refresh-btn:hover {
+    background: #0052a3;
+    color: white;
+}
+
+/* Container */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
 
 /* HTMX indicators */
 .htmx-indicator {
@@ -9,55 +99,360 @@
     display: inline-block;
 }
 
-/* Smooth transitions */
 .htmx-swapping {
     opacity: 0;
     transition: opacity 150ms ease-out;
 }
 
-/* Category color coding */
-.category-indicator {
-    width: 4px;
-    height: 100%;
-    position: absolute;
-    left: 0;
-    top: 0;
+/* Multi-column layout for desktop */
+@media (min-width: 1024px) {
+    .categories-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        align-items: start;
+    }
 }
 
-/* Link hover effects */
-a[href^="http"]:not(.no-external):after {
-    content: " ↗";
-    font-size: 0.75em;
-    opacity: 0.6;
+@media (min-width: 1400px) {
+    .categories-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Digest header */
+.digest-header {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #e5e5e5;
+}
+
+.digest-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0 0 8px 0;
+}
+
+.digest-meta {
+    color: #666;
+    font-size: 14px;
+    margin: 4px 0;
+}
+
+.digest-stats {
+    color: #888;
+    font-size: 12px;
+    margin-top: 8px;
+}
+
+/* Category sections */
+.category-section {
+    background: white;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #e5e5e5;
+    margin-bottom: 20px;
+    break-inside: avoid;
+}
+
+/* Section headers */
+.section-header {
+    background: #fafafa;
+    padding: 12px 20px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 11px;
+    font-weight: 600;
+    color: #333;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.section-header .emoji {
+    font-size: 14px;
+    margin-right: 8px;
+}
+
+.section-header .count {
+    font-size: 10px;
+    background: #e9e9e9;
+    color: #666;
+    padding: 2px 6px;
+    border-radius: 10px;
+}
+
+/* Category-specific header colors */
+.category-ukraine .section-header { background: linear-gradient(135deg, #0066cc, #0052a3); color: white; }
+.category-gaza .section-header { background: linear-gradient(135deg, #cc6600, #a3520f); color: white; }
+.category-ai .section-header { background: linear-gradient(135deg, #9333ea, #7c3aed); color: white; }
+.category-tech .section-header { background: linear-gradient(135deg, #059669, #047857); color: white; }
+.category-finance .section-header { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
+.category-politics .section-header { background: linear-gradient(135deg, #7c2d12, #6b21a8); color: white; }
+.category-health .section-header { background: linear-gradient(135deg, #c2185b, #ad1457); color: white; }
+.category-science .section-header { background: linear-gradient(135deg, #2e7d32, #1b5e20); color: white; }
+.category-swiss .section-header { background: linear-gradient(135deg, #c62828, #ad1457); color: white; }
+.category-world .section-header { background: linear-gradient(135deg, #546e7a, #455a64); color: white; }
+.category-crypto .section-header { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+.category-europe .section-header { background: linear-gradient(135deg, #1e40af, #1e3a8a); color: white; }
+.category-premier_league .section-header { background: linear-gradient(135deg, #059669, #047857); color: white; }
+
+.category-ukraine .section-header .count,
+.category-gaza .section-header .count,
+.category-ai .section-header .count,
+.category-tech .section-header .count,
+.category-finance .section-header .count,
+.category-politics .section-header .count,
+.category-health .section-header .count,
+.category-science .section-header .count,
+.category-swiss .section-header .count,
+.category-world .section-header .count,
+.category-crypto .section-header .count,
+.category-europe .section-header .count,
+.category-premier_league .section-header .count {
+    background: rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.9);
+}
+
+/* Articles */
+.article {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f8f8f8;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    transition: background-color 0.15s ease;
+}
+
+.article:last-child {
+    border-bottom: none;
+}
+
+.article:hover {
+    background-color: #fafafa;
+}
+
+/* Article indicators */
+.article-indicator {
+    width: 3px;
+    height: 32px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.category-ukraine .article-indicator { background: #0066cc; }
+.category-gaza .article-indicator { background: #cc6600; }
+.category-ai .article-indicator { background: #9333ea; }
+.category-tech .article-indicator { background: #059669; }
+.category-finance .article-indicator { background: #dc2626; }
+.category-politics .article-indicator { background: #7c2d12; }
+.category-health .article-indicator { background: #c2185b; }
+.category-science .article-indicator { background: #2e7d32; }
+.category-swiss .article-indicator { background: #c62828; }
+.category-world .article-indicator { background: #546e7a; }
+.category-crypto .article-indicator { background: #f59e0b; }
+.category-europe .article-indicator { background: #1e40af; }
+.category-premier_league .article-indicator { background: #059669; }
+
+/* Article content */
+.article-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.article-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1a1a1a;
+    line-height: 1.3;
+    margin: 0 0 6px 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.article-title a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.article-title a:hover {
+    color: #0066cc;
+}
+
+.article-summary {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+    margin: 0 0 8px 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.article-meta {
+    font-size: 10px;
+    color: #999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.article-source {
+    font-weight: 500;
+    color: #777;
+}
+
+.article-time {
+    color: #999;
+}
+
+.article-engagement {
+    margin-left: auto;
+    color: #cc6600;
+    font-weight: 500;
+}
+
+/* No digest state */
+.no-digest {
+    background: white;
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    border: 1px solid #e5e5e5;
+}
+
+.no-digest-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.no-digest-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0 0 8px 0;
+}
+
+.no-digest-message {
+    color: #666;
+    margin: 0 0 20px 0;
+}
+
+.refresh-btn-alt {
+    background: #0066cc;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-block;
+    transition: background-color 0.15s ease;
+}
+
+.refresh-btn-alt:hover {
+    background: #0052a3;
+    color: white;
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    padding: 20px;
+    color: #888;
+    font-size: 12px;
+}
+
+.footer a {
+    color: #0066cc;
+    text-decoration: none;
+}
+
+.footer a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1023px) {
+    .categories-grid {
+        display: block;
+    }
+    
+    .container {
+        padding: 16px;
+    }
+    
+    .digest-header {
+        padding: 16px;
+    }
+    
+    .digest-title {
+        font-size: 20px;
+    }
+}
+
+@media (max-width: 640px) {
+    .container {
+        padding: 12px;
+    }
+    
+    .digest-header {
+        padding: 12px;
+    }
+    
+    .digest-title {
+        font-size: 18px;
+    }
+    
+    .article {
+        padding: 12px 16px;
+        gap: 8px;
+    }
+    
+    .article-title {
+        font-size: 13px;
+    }
+    
+    .article-summary {
+        font-size: 11px;
+    }
+    
+    .section-header {
+        padding: 10px 16px;
+        font-size: 10px;
+    }
 }
 
 /* Print styles */
 @media print {
-    .no-print {
-        display: none !important;
-    }
-    
-    body {
-        background: white !important;
-    }
-    
-    .bg-white {
-        box-shadow: none !important;
-    }
+    body { background: white; }
+    .category-section { border: 1px solid #ccc; margin-bottom: 16px; }
+    .section-header { background: #f5f5f5 !important; color: #333 !important; }
+    .article { page-break-inside: avoid; }
+    .refresh-btn { display: none; }
+    .footer { display: none; }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-    /* Add dark mode styles if needed */
+/* Loading states */
+.loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #ccc;
+    border-radius: 50%;
+    border-top-color: #0066cc;
+    animation: spin 1s ease-in-out infinite;
 }
 
-/* Mobile optimizations */
-@media (max-width: 640px) {
-    .text-2xl {
-        font-size: 1.5rem;
-    }
-    
-    .grid-cols-4 {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }

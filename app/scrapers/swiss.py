@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 from app.scrapers.base import BaseScraper
-from app.config import settings
+from app.config import get_swiss_sources
 
 class SwissScraper(BaseScraper):
     def __init__(self):
@@ -10,11 +10,14 @@ class SwissScraper(BaseScraper):
         """Scrape Swiss news sources"""
         all_articles = []
         
-        for source_url in settings.swiss_sources:
+        # Use the new configuration system
+        swiss_sources = get_swiss_sources()
+        
+        for source_url in swiss_sources:
             articles = await self.fetch_rss(source_url)
             for article in articles:
-                # Categorize Swiss articles
-                article["category"] = self._categorize_swiss_article(article)
+                # DON'T categorize here - let LM Studio do it in the pipeline
+                # article["category"] = self._categorize_swiss_article(article)
                 all_articles.append(article)
         
         return all_articles
@@ -29,13 +32,13 @@ class SwissScraper(BaseScraper):
         elif any(term in title_content for term in ["gaza", "israel", "palestine", "hamas"]):
             return "gaza"
         elif any(term in title_content for term in ["ai", "artificial intelligence", "machine learning", "data"]):
-            return "ai_data"
+            return "ai"
         elif any(term in title_content for term in ["technology", "tech", "digital", "cyber"]):
-            return "technology"
+            return "tech"
         elif any(term in title_content for term in ["politik", "politics", "bundesrat", "parliament", "wahlen"]):
             return "politics"
         elif any(term in title_content for term in ["wirtschaft", "economy", "bank", "börse", "franken"]):
             return "finance"
         else:
-            # Default to Switzerland category for local news
-            return "switzerland"
+            # Default to Swiss category for local news
+            return "swiss"

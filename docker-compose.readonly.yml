@@ -1,0 +1,107 @@
+services:
+  app:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"  # Only bind to localhost
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://newsuser:newspass@db:5432/newsdigest
+      - REDIS_URL=redis://redis:6379
+      - LM_STUDIO_URL=http://host.docker.internal:1234/v1
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./config:/app/config:ro  # Read-only config mount
+    restart: unless-stopped
+    
+    # 🔒 MAXIMUM SECURITY: READ-ONLY CONTAINER
+    read_only: true  # Complete file system protection
+    security_opt:
+      - no-new-privileges:true  # Prevent privilege escalation
+    cap_drop:
+      - ALL  # Drop all Linux capabilities
+    cap_add:
+      - CHOWN  # Only add what's absolutely needed
+      - SETGID
+      - SETUID
+    user: "1000:1000"  # Explicit non-root user
+    
+    # Writable areas via tmpfs (in-memory only, not persistent)
+    tmpfs:
+      - /tmp:exec,nosuid,nodev,size=100m
+      - /app/logs:exec,nosuid,nodev,size=50m  
+      - /app/.cache:noexec,nosuid,nodev,size=50m
+      - /home/newsapp/.local:noexec,nosuid,nodev,size=50m
+      - /var/log:noexec,nosuid,nodev,size=20m
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: newsuser
+      POSTGRES_PASSWORD: newspass
+      POSTGRES_DB: newsdigest
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"  # Only localhost access
+    
+    # 🔒 SECURITY: Can't be read-only (needs to write DB files)
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE  # PostgreSQL needs this for data files
+    user: "postgres:postgres"
+    
+    # Make non-data areas read-only where possible
+    tmpfs:
+      - /tmp:exec,nosuid,nodev,size=50m
+      - /var/log:noexec,nosuid,nodev,size=20m
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"  # Only localhost access
+    volumes:
+      - redis_data:/data
+    command: redis-server --save 20 1 --loglevel warning
+    
+    # 🔒 SECURITY: Can't be read-only (needs to write data files)
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "999:999"  # Non-root Redis user
+    
+    # Make non-data areas read-only where possible  
+    tmpfs:
+      - /tmp:exec,nosuid,nodev,size=20m
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "127.0.0.1:8081:8081"  # Only localhost access
+    depends_on:
+      - redis
+    
+    # 🔒 MAXIMUM SECURITY: FULLY READ-ONLY
+    read_only: true  # Web UI doesn't need file system writes
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "1000:1000"
+    
+    # Only /tmp needs to be writable
+    tmpfs:
+      - /tmp:exec,nosuid,nodev,size=20m
+
+volumes:
+  postgres_data:
+  redis_data:

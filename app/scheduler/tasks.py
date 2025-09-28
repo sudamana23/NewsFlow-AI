@@ -146,8 +146,8 @@ class NewsScheduler:
                             await news_stream.acknowledge_article(article_data["stream_id"])
                             continue
                         
-                        # Summarize article content with LM Studio
-                        summary = await summarizer.summarize_article(article_data)
+                        # Summarize and categorize article content with LM Studio
+                        category, summary = await summarizer.categorize_and_summarize(article_data)
                         
                         # Ensure published_at is timezone-naive if it exists
                         published_at = article_data.get("published_at")
@@ -162,7 +162,7 @@ class NewsScheduler:
                             summary=summary,
                             source=article_data["source"],
                             source_type=article_data["source_type"],
-                            category=article_data.get("category"),
+                            category=category,  # Use AI-determined category
                             published_at=published_at,
                             engagement_score=article_data.get("engagement_score", 0.0),
                             is_processed=True
@@ -268,8 +268,8 @@ class NewsScheduler:
         selected = []
         max_per_category = 5 if digest_type in ["morning", "evening"] else 3
         
-        # Priority categories
-        priority_cats = ["ukraine", "gaza", "ai_data", "technology", "politics", "world"]
+        # Priority categories (updated to match new categorization)
+        priority_cats = ["ukraine", "gaza", "ai", "tech", "finance", "politics", "premier_league", "swiss", "world"]
         
         for cat in priority_cats:
             if cat in categories:

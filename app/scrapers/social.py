@@ -1,7 +1,7 @@
 import asyncio
 from typing import List, Dict, Any
 from app.scrapers.base import BaseScraper
-from app.config import settings
+from app.config import get_reddit_subreddits
 
 class SocialScraper(BaseScraper):
     def __init__(self):
@@ -25,7 +25,10 @@ class SocialScraper(BaseScraper):
         """Scrape Reddit subreddits"""
         articles = []
         
-        for subreddit in settings.reddit_subreddits:
+        # Use the new configuration system
+        reddit_subreddits = get_reddit_subreddits()
+        
+        for subreddit in reddit_subreddits:
             try:
                 # Use Reddit RSS feeds (no auth required)
                 rss_url = f"https://www.reddit.com/r/{subreddit}/hot.rss"
@@ -34,7 +37,8 @@ class SocialScraper(BaseScraper):
                 for article in subreddit_articles:
                     article["source"] = f"r/{subreddit}"
                     article["engagement_score"] = await self._get_reddit_score(article["url"])
-                    article["category"] = self._categorize_subreddit(subreddit)
+                    # DON'T categorize here - let LM Studio do it in the pipeline
+                    # article["category"] = self._categorize_subreddit(subreddit)
                     articles.append(article)
                     
             except Exception as e:
@@ -61,10 +65,10 @@ class SocialScraper(BaseScraper):
         """Map subreddit to category"""
         mapping = {
             "worldnews": "world",
-            "technology": "technology",
-            "artificial": "ai_data",
-            "MachineLearning": "ai_data",
+            "technology": "tech",
+            "artificial": "ai",
+            "MachineLearning": "ai",
             "ukraine": "ukraine",
-            "switzerland": "switzerland"
+            "switzerland": "swiss"
         }
         return mapping.get(subreddit, "world")

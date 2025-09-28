@@ -1,0 +1,91 @@
+# Hardened Docker Compose Configuration
+# Applies security best practices to reduce attack surface
+
+services:
+  app:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"  # Only bind to localhost
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://newsuser:newspass@db:5432/newsdigest
+      - REDIS_URL=redis://redis:6379
+      - LM_STUDIO_URL=http://host.docker.internal:1234/v1
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./config:/app/config:ro  # Read-only mount
+    restart: unless-stopped
+    
+    # 🔒 Security hardening
+    security_opt:
+      - no-new-privileges:true  # Prevent privilege escalation
+    cap_drop:
+      - ALL  # Drop all Linux capabilities
+    cap_add:
+      - CHOWN  # Only add what's needed
+      - SETGID
+      - SETUID
+    user: "1000:1000"  # Explicit non-root user
+    read_only: true  # Read-only file system
+    tmpfs:
+      - /tmp:exec,nosuid,nodev,size=100m
+      - /app/logs:exec,nosuid,nodev,size=50m
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: newsuser
+      POSTGRES_PASSWORD: newspass
+      POSTGRES_DB: newsdigest
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"  # Only localhost access
+    
+    # 🔒 Security hardening
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE  # Postgres needs this for data files
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"  # Only localhost access
+    volumes:
+      - redis_data:/data
+    command: redis-server --save 20 1 --loglevel warning
+    
+    # 🔒 Security hardening
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "999:999"  # Non-root Redis user
+
+  # Redis Commander with security
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "127.0.0.1:8081:8081"  # Only localhost access
+    depends_on:
+      - redis
+    
+    # 🔒 Security hardening  
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "1000:1000"
+
+volumes:
+  postgres_data:
+  redis_data:
