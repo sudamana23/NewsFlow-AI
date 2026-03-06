@@ -18,7 +18,6 @@ mainstream_sources:
     url: "https://www.ft.com/news-feed"
     category: "finance"
     enabled: true
-  # New additions
   - name: "Reuters World"
     url: "https://feeds.reuters.com/Reuters/worldNews"
     category: "world"
@@ -39,6 +38,14 @@ mainstream_sources:
     url: "https://rss.dw.com/xml/rss-en-all"
     category: "world" 
     enabled: true
+  - name: "Le Monde"
+    url: "https://www.lemonde.fr/rss/une.xml"
+    category: "world"
+    enabled: true
+  - name: "New York Times World"
+    url: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
+    category: "world"
+    enabled: true
 
 tech_sources:
   - name: "Ars Technica"
@@ -56,8 +63,7 @@ tech_sources:
   - name: "TechCrunch"
     url: "https://techcrunch.com/feed/"
     category: "tech"
-    enabled: false  # Disabled by default
-  # New additions
+    enabled: false
   - name: "Wired"
     url: "https://www.wired.com/feed/rss"
     category: "tech"
@@ -74,6 +80,14 @@ tech_sources:
     url: "http://rss.slashdot.org/Slashdot/slashdotMain"
     category: "tech"
     enabled: true
+  - name: "InfoQ"
+    url: "https://feed.infoq.com/"
+    category: "tech"
+    enabled: true
+  - name: "GitHub Blog"
+    url: "https://github.blog/feed/"
+    category: "tech"
+    enabled: true
 
 swiss_sources:
   - name: "NZZ"
@@ -84,13 +98,16 @@ swiss_sources:
     url: "https://www.tagesanzeiger.ch/rss.html"
     category: "swiss"
     enabled: true
-  # New additions
   - name: "SWI swissinfo.ch"
     url: "https://www.swissinfo.ch/eng/rss"
     category: "swiss"
     enabled: true
   - name: "The Local Switzerland"
     url: "https://www.thelocal.ch/rss"
+    category: "swiss"
+    enabled: true
+  - name: "SRF News"
+    url: "https://www.srf.ch/news/bnf/rss/1646"
     category: "swiss"
     enabled: true
 
@@ -103,8 +120,7 @@ ai_sources:
     url: "https://openai.com/blog/rss.xml"
     category: "ai"
     enabled: true
-  # New additions
-  - name: "MIT Technology Review"
+  - name: "MIT Technology Review AI"
     url: "https://www.technologyreview.com/feed/"
     category: "ai"
     enabled: true
@@ -118,7 +134,19 @@ ai_sources:
     enabled: true
   - name: "Towards Data Science"
     url: "https://towardsdatascience.com/feed"
-    category: "data"
+    category: "ai"
+    enabled: true
+  - name: "Google AI Blog"
+    url: "https://ai.googleblog.com/atom.xml"
+    category: "ai"
+    enabled: true
+  - name: "DeepMind Blog"
+    url: "https://deepmind.com/blog/feed/basic/"
+    category: "ai"
+    enabled: true
+  - name: "Anthropic Blog"
+    url: "https://www.anthropic.com/news/rss.xml"
+    category: "ai"
     enabled: true
 
 finance_sources:
@@ -132,7 +160,15 @@ finance_sources:
     enabled: true
   - name: "CoinDesk"
     url: "https://feeds.coindesk.com/bitcoin"
-    category: "crypto"
+    category: "finance"
+    enabled: true
+  - name: "Bloomberg"
+    url: "https://www.bloomberg.com/feed/podcast/etf-report.xml"
+    category: "finance"
+    enabled: true
+  - name: "Financial Times Markets"
+    url: "https://www.ft.com/markets?format=rss"
+    category: "finance"
     enabled: true
 
 science_sources:
@@ -148,6 +184,45 @@ science_sources:
     url: "https://phys.org/rss-feed/"
     category: "science"
     enabled: true
+  - name: "Nature"
+    url: "https://www.nature.com/subjects/machine-learning.rss"
+    category: "science"
+    enabled: true
+  - name: "Scientific American"
+    url: "https://www.scientificamerican.com/feed/rss/"
+    category: "science"
+    enabled: true
+
+# remapped new categories into existing ones so frontend shows them
+climate_sources:
+  - name: "Climate Home News"
+    url: "https://www.climatechangenews.com/feed/"
+    category: "world"
+    enabled: true
+  - name: "Inside Climate News"
+    url: "https://insideclimatenews.org/feed/"
+    category: "world"
+    enabled: true
+
+security_sources:
+  - name: "Krebs on Security"
+    url: "https://krebsonsecurity.com/feed/"
+    category: "tech"
+    enabled: true
+  - name: "Bleeping Computer"
+    url: "https://www.bleepingcomputer.com/feed/"
+    category: "tech"
+    enabled: true
+
+culture_sources:
+  - name: "The Atlantic"
+    url: "https://www.theatlantic.com/feed/all/"
+    category: "world"
+    enabled: true
+  - name: "New Yorker"
+    url: "https://www.newyorker.com/feed/rss"
+    category: "world"
+    enabled: true
 
 government_sources:
   - name: "European Commission"
@@ -157,6 +232,10 @@ government_sources:
   - name: "UN News"
     url: "https://news.un.org/feed/subscribe/en/news/all/rss.xml"
     category: "world"
+    enabled: true
+  - name: "Swiss Federal Council"
+    url: "https://www.admin.ch/gov/en/start/documentation/media-releases.msg-id-0000.rss"
+    category: "politics"
     enabled: true
 
 reddit_sources:
@@ -184,14 +263,13 @@ reddit_sources:
     subreddit: "switzerland"
     category: "swiss"
     enabled: true
-  # New additions
   - name: "r/singularity"
     subreddit: "singularity"
     category: "ai"
     enabled: true
   - name: "r/datascience"
     subreddit: "datascience"
-    category: "data"
+    category: "ai"
     enabled: true
   - name: "r/programming"
     subreddit: "programming"
@@ -213,8 +291,11 @@ reddit_sources:
     subreddit: "soccer"
     category: "premier_league"
     enabled: true
+  - name: "r/netsec"
+    subreddit: "netsec"
+    category: "tech"
+    enabled: true
 
-# Sports sources
 sports_sources:
   - name: "BBC Sport Football"
     url: "https://feeds.bbci.co.uk/sport/football/rss.xml"
@@ -229,17 +310,11 @@ sports_sources:
     category: "premier_league"
     enabled: true
 
-# Custom sources - add your own here
-custom_sources:
-  # Example:
-  # - name: "Your Custom Source"
-  #   url: "https://example.com/feed.rss"
-  #   category: "custom"
-  #   enabled: true
+custom_sources: []
 
-# Global settings
 settings:
   max_articles_per_source: 10
   update_frequency_minutes: 60
+  max_articles_per_digest: 25
   respect_robots_txt: true
   user_agent: "NewsDigestAgent/1.0"

@@ -92,81 +92,68 @@ async def read_digest(
     db: AsyncSession = Depends(get_async_session)
 ):
     """Main digest page"""
-    
+
     try:
+        # 1. Get the latest digest (or none)
         if digest_type == "current":
-            # Get latest digest
             result = await db.execute(
-                select(Digest)
-                .order_by(desc(Digest.created_at))
-                .limit(1)
+                select(Digest).order_by(desc(Digest.created_at)).limit(1)
             )
             digest = result.scalar_one_or_none()
         else:
-            # Get specific digest by date or type
             digest = None
-        
+
         if not digest:
-            logger.info("No digest found, showing placeholder")
             return templates.TemplateResponse(
                 "digest.html",
                 {
                     "request": request,
                     "digest": None,
-                    "articles": [],
                     "categories": {},
-                    "message": "🚀 News Digest Agent is online! The system is collecting news and will have your first digest ready soon. Check back in an hour for your personalized news summary.",
+                    "message": "🚀 News Digest Agent is online! No digest yet. Check back soon.",
                     "is_deep_read": False
                 }
             )
-        
-        # Convert digest time to CET
+
         digest_cet = convert_to_cet(digest.created_at)
-        
-        # Get articles for this digest
+
+        # 2. Load the articles for this digest
         result = await db.execute(
             select(Article, DigestArticle)
             .join(DigestArticle, Article.id == DigestArticle.article_id)
             .where(DigestArticle.digest_id == digest.id)
             .order_by(DigestArticle.position)
         )
-        
-        articles_data = result.all()
-        articles = []
-        
-        for article, digest_article in articles_data:
-            # Convert article times to CET
-            published_cet = convert_to_cet(article.published_at) if article.published_at else None
-            
-            articles.append({
-                "article": article, 
-                "position": digest_article.position, 
-                "category_group": digest_article.category_group,
-                "published_cet": published_cet
-            })
-        
-        # Group articles by category
+
+        rows = result.all()
+
+        # 3. Wrap each into the shape your template expects
         categories = {}
-        for item in articles:
-            cat = item["article"].category or "world"
-            if cat not in categories:
-                categories[cat] = []
-            categories[cat].append(item)
-        
-        logger.info(f"📰 Serving digest with {len(articles)} articles across {len(categories)} categories")
-        
+        for article, digest_article in rows:
+            published_cet = convert_to_cet(article.published_at) if article.published_at else None
+            item = {
+                "article": article,  # <-- matches digest.html usage
+                "published_cet": published_cet,
+                "position": digest_article.position,
+                "category_group": digest_article.category_group,
+            }
+
+            cat = article.category or "world"
+            categories.setdefault(cat, []).append(item)
+
+        logger.info(f"📰 Serving digest with {len(rows)} articles across {len(categories)} categories")
+
         return templates.TemplateResponse(
             "digest.html",
             {
                 "request": request,
                 "digest": digest,
                 "digest_cet": digest_cet,
-                "articles": articles,
-                "categories": categories,
-                "is_deep_read": digest.digest_type in ["morning", "evening"]
+                "categories": categories,   # <-- only categories, no articles[] root needed
+                "is_deep_read": digest.digest_type in ["morning", "evening"],
             }
         )
-        
+           
     except Exception as e:
         logger.error(f"❌ Error in main route: {e}")
         # Return a simple error page instead of crashing

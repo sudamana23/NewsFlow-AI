@@ -1,7 +1,7 @@
 import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, and_
 from typing import List, Dict, Any
@@ -152,7 +152,7 @@ class NewsScheduler:
                         # Ensure published_at is timezone-naive if it exists
                         published_at = article_data.get("published_at")
                         if published_at and hasattr(published_at, 'tzinfo') and published_at.tzinfo:
-                            published_at = published_at.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+                            published_at = published_at.astimezone(timezone.utc).replace(tzinfo=None)
                         
                         # Create article record
                         article = Article(
@@ -211,7 +211,7 @@ class NewsScheduler:
                         Article.is_processed == True
                     ))
                     .order_by(Article.engagement_score.desc(), Article.scraped_at.desc())
-                    .limit(settings.max_stories_per_digest * 2)  # Get more for filtering
+                    .limit(settings.max_stories_per_digest * 10)  # Get more for filtering
                 )
                 
                 articles = result.scalars().all()

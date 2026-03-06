@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     deep_read_hours: List[int] = [6, 22]  # 6am, 10pm
     
     # Content
-    max_stories_per_digest: int = 20
+    max_stories_per_digest: int = 50
     summary_max_length: int = 150
     
     # Source configuration file path
@@ -113,8 +113,8 @@ class NewsSourceManager:
         for stype in source_types:
             if stype == "settings":
                 continue
-                
-            sources = self._sources_config.get(stype, [])
+
+            sources = self._sources_config.get(stype) or []
             for source in sources:
                 if source.get("enabled", True):
                     source["source_type"] = stype
@@ -157,10 +157,18 @@ source_manager = NewsSourceManager(settings.sources_config_path)
 
 # Backward compatibility: expose sources as before
 def get_mainstream_sources() -> List[str]:
-    """Get mainstream news sources including finance, science, government, and sports"""
+    """Get mainstream news sources including finance, science, government, sports, climate, security, and culture"""
     urls = []
-    # Include multiple categories in mainstream scraper
-    for category in ["mainstream_sources", "finance_sources", "science_sources", "government_sources", "sports_sources"]:
+    for category in [
+        "mainstream_sources",
+        "finance_sources",
+        "science_sources",
+        "government_sources",
+        "sports_sources",
+        "climate_sources",
+        "security_sources",
+        "culture_sources",
+    ]:
         sources = source_manager.get_enabled_sources(category)
         urls.extend([s["url"] for s in sources if "url" in s])
     return urls
