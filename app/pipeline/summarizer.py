@@ -141,7 +141,7 @@ class LMStudioSummarizer:
             category = result["choices"][0]["message"]["content"].strip().lower()
             
             # Validate category is one of our accepted categories
-            valid_categories = ["ukraine", "gaza", "swiss", "europe", "ai", "tech", "crypto", "finance", "science", "health", "politics", "world", "premier_league"]
+            valid_categories = ["ukraine", "gaza", "swiss", "europe", "ai", "tech", "crypto", "finance", "science", "health", "politics", "world", "premier_league", "climate", "geopolitics", "sports", "philosophy", "neuroscience"]
             
             if category in valid_categories:
                 logger.info(f"LLM categorized as '{category}': {article['title'][:50]}...")
@@ -166,11 +166,11 @@ class LMStudioSummarizer:
         
         prompt = f"""Categorize this news article. Choose ONE category from this list:
 
-ukraine, gaza, swiss, europe, ai, tech, crypto, finance, science, health, politics, world, premier_league
+ukraine, gaza, swiss, europe, ai, tech, crypto, finance, science, health, politics, world, sports, climate, geopolitics, philosophy, neuroscience
 
 Rules:
 - If about Ukraine/Russia war → ukraine
-- If about Gaza/Israel/Palestine → gaza  
+- If about Gaza/Israel/Palestine → gaza
 - If about Switzerland → swiss
 - If about AI/Machine Learning → ai
 - If about other technology → tech
@@ -179,7 +179,12 @@ Rules:
 - If about scientific research → science
 - If about health/medicine → health
 - If about politics/elections → politics
-- If about Premier League football → premier_league
+- If about geopolitics/international security/foreign policy analysis → geopolitics
+- If about climate/environment/sustainability → climate
+- If about sports/football/soccer → sports
+- If about European politics or EU → europe
+- If about philosophy/ethics/consciousness/metaphysics → philosophy
+- If about neuroscience/brain/cognition/neurology → neuroscience
 - Everything else → world
 
 Title: {title}
@@ -202,23 +207,31 @@ Category:"""
             # Highest priority - conflicts
             "ukraine": ["ukraine", "ukrainian", "russia", "russian", "putin", "zelensky", "kyiv", "moscow", "war in ukraine", "invasion", "nato aid"],
             "gaza": ["gaza", "israel", "israeli", "palestinian", "palestine", "hamas", "west bank", "jerusalem", "netanyahu", "israel-palestine", "idf", "middle east conflict"],
-            
+
+            # Geopolitics / analysis
+            "geopolitics": ["foreign policy", "geopolitical", "foreign affairs", "diplomacy", "sanctions", "security council", "nato", "pentagon", "strategic", "war on the rocks", "carnegie", "rand corporation", "cfr", "council on foreign relations", "international security"],
+
             # Geographic
             "swiss": ["switzerland", "swiss", "zurich", "geneva", "bern", "basel", "swiss franc", "swiss bank"],
-            "europe": ["european union", "eu ", "brexit", "european commission", "eurozone", "european parliament"],
-            
+            "europe": ["european union", "eu ", "brexit", "european commission", "eurozone", "european parliament", "macron", "scholz", "ursula"],
+
             # Technical
             "ai": ["artificial intelligence", "ai ", "machine learning", "chatgpt", "openai", "llm", "neural network", "deep learning", "gpt", "claude", "anthropic"],
             "crypto": ["bitcoin", "cryptocurrency", "blockchain", "ethereum", "defi", "nft", "crypto "],
             "tech": ["technology", "software", "hardware", "startup", "silicon valley", "app store", "cyber", "programming", "developer"],
             "finance": ["stock market", "wall street", "nasdaq", "dow jones", "federal reserve", "inflation", "economy"],
-            
+
             # Science & Health
-            "science": ["research", "study finds", "scientists", "discovery", "space", "nasa", "climate change"],
-            "health": ["health", "medical", "hospital", "doctor", "disease", "vaccine", "pandemic", "covid"],
-            
+            "science": ["research", "study finds", "scientists", "discovery", "space", "nasa", "physics", "biology", "chemistry"],
+            "health": ["health", "medical", "hospital", "doctor", "disease", "vaccine", "pandemic", "covid", "fda", "clinical trial", "medicine"],
+            "climate": ["climate change", "global warming", "carbon emissions", "renewable energy", "sustainability", "paris agreement", "ipcc", "net zero", "fossil fuels"],
+
             # Sports
-            "premier_league": ["premier league", "manchester united", "manchester city", "liverpool", "chelsea", "arsenal", "tottenham", "football", "premier league", "epl", "english football"]
+            "sports": ["premier league", "manchester united", "manchester city", "liverpool", "chelsea", "arsenal", "tottenham", "football", "soccer", "nba", "nfl", "olympics", "championship", "world cup"],
+
+            # Mind & Ideas
+            "philosophy": ["philosophy", "philosophical", "ethics", "consciousness", "metaphysics", "epistemology", "existential", "moral", "ontology", "plato", "aristotle", "kant", "nietzsche", "phenomenology", "meaning of life", "free will"],
+            "neuroscience": ["neuroscience", "neuroscientist", "brain", "neuron", "cortex", "cognition", "cognitive", "synapse", "dopamine", "serotonin", "psychiatric", "psychiatry", "alzheimer", "dementia", "neural", "mind-brain", "fmri", "neuroimaging"]
         }
         
         # Score categories with priority weighting
@@ -234,8 +247,8 @@ Category:"""
                 # Apply priority multipliers
                 if category in ["ukraine", "gaza"]:
                     score *= 3  # Conflicts get highest priority
-                elif category == "swiss":
-                    score *= 2  # Local news gets priority
+                elif category in ["swiss", "geopolitics"]:
+                    score *= 2  # Local and analysis get priority
                 
                 category_scores[category] = score
         

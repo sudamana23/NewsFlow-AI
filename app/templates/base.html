@@ -1,44 +1,44 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}News Digest{% endblock %}</title>
+    <title>{% block title %}NewsFlow-AI{% endblock %}</title>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <link rel="stylesheet" href="/static/style.css?v=3">
-    <style>
-        /* Ensure core layout works even if CSS file fails to load */
-        .categories-grid { display: grid; gap: 16px; }
-        @media (min-width: 1024px) { .categories-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (min-width: 1400px) { .categories-grid { grid-template-columns: repeat(3, 1fr); } }
-        .category-section { background: white; border-radius: 6px; border: 1px solid #e5e5e5; margin-bottom: 20px; overflow: hidden; }
-        .section-header { background: #fafafa; padding: 12px 20px; border-bottom: 1px solid #f0f0f0; font-size: 11px; font-weight: 600; color: #333; text-transform: uppercase; display: flex; justify-content: space-between; }
-        .article { padding: 14px 20px; border-bottom: 1px solid #f8f8f8; display: flex; gap: 12px; }
-        .article:last-child { border-bottom: none; }
-        .article-indicator { width: 3px; height: 32px; background: #0066cc; border-radius: 2px; margin-top: 4px; flex-shrink: 0; }
-        .article-content { flex: 1; }
-        .article-title { font-size: 14px; font-weight: 500; margin: 0 0 6px 0; line-height: 1.3; }
-        .article-title a { color: #1a1a1a; text-decoration: none; }
-        .article-summary { font-size: 12px; color: #666; margin: 0 0 8px 0; line-height: 1.4; }
-        .article-meta { font-size: 10px; color: #999; display: flex; gap: 8px; }
-    </style>
+    <link rel="stylesheet" href="/static/style.css?v=5">
+    <script>
+        /* Apply saved theme immediately to avoid any flash.
+           Always stores and reads explicit 'light' or 'dark'. */
+        (function() {
+            var saved = localStorage.getItem('nf-theme');
+            var theme = (saved === 'light') ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
 </head>
 <body>
+
     <!-- Navigation -->
     <nav class="nav-header">
         <div class="nav-container">
             <div class="nav-content">
-                <h1 class="nav-title">
-                    <a href="/">📰 NewsFlow-AI</a>
-                </h1>
+                <a href="/" class="nav-logo">
+                    <span class="nav-logo-text">NewsFlow-AI</span>
+                </a>
+                <span class="live-dot">Live</span>
+                <div class="nav-spacer"></div>
                 <div class="nav-actions">
                     <a href="/archive" class="nav-link">Archive</a>
                     <a href="/debug/status" class="nav-link">Status</a>
-                    <a href="/refresh" 
+                    <button class="theme-toggle" id="theme-toggle-btn" aria-label="Toggle theme">
+                        <span class="icon-moon">🌙</span>
+                        <span class="icon-sun">☀️</span>
+                    </button>
+                    <a href="/refresh"
                        id="refresh-btn"
                        onclick="showRefreshLoading(this)"
                        class="refresh-btn">
-                        <span id="refresh-icon">🔄</span>
+                        <span id="refresh-icon">↻</span>
                         <span id="refresh-text">Refresh</span>
                     </a>
                 </div>
@@ -46,35 +46,84 @@
         </div>
     </nav>
 
+    <!-- Category filter pills (injected by child template) -->
+    {% block filter_bar %}{% endblock %}
+
     <!-- Main content -->
     <main class="container">
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Auto-refresh every 5 minutes -->
-    <div hx-get="/api/digest/latest" 
-         hx-trigger="every 300s" 
-         hx-target="#digest-content" 
+    <!-- Auto-refresh poll -->
+    <div hx-get="/api/digest/latest"
+         hx-trigger="every 300s"
+         hx-target="#digest-content"
          hx-swap="outerHTML">
     </div>
 
     <script>
+        /* ---- Theme toggle ---- */
+        (function() {
+            var btn = document.getElementById('theme-toggle-btn');
+            if (!btn) return;
+            btn.addEventListener('click', function() {
+                var html = document.documentElement;
+                var current = html.getAttribute('data-theme');
+                var next = (current === 'dark') ? 'light' : 'dark';
+                html.setAttribute('data-theme', next);
+                try { localStorage.setItem('nf-theme', next); } catch(e) {}
+            });
+        })();
+
+        /* ---- Refresh loading state ---- */
         function showRefreshLoading(button) {
-            const icon = document.getElementById('refresh-icon');
-            const text = document.getElementById('refresh-text');
-            
+            var icon = document.getElementById('refresh-icon');
+            var text = document.getElementById('refresh-text');
             if (icon && text) {
                 icon.innerHTML = '<span class="loading-spinner"></span>';
-                text.innerHTML = 'Collecting...';
+                text.textContent = 'Collecting…';
                 button.style.pointerEvents = 'none';
                 button.style.opacity = '0.7';
             }
         }
 
-        // Auto-refresh every 5 minutes
-        setTimeout(function() {
-            window.location.reload();
-        }, 300000);
+        /* ---- Category filter pills ---- */
+        function filterCategory(pill, category) {
+            document.querySelectorAll('.filter-pill').forEach(function(p) {
+                p.classList.remove('active');
+            });
+            pill.classList.add('active');
+            document.querySelectorAll('.category-section').forEach(function(sec) {
+                sec.hidden = (category !== 'all' && sec.dataset.category !== category);
+            });
+        }
+
+        /* ---- Social card tabs ---- */
+        function switchTab(btn, tabId) {
+            /* Find sibling tab buttons — walk up to .social-tabs then query within */
+            var tabBar = btn.parentElement;
+            if (tabBar) {
+                tabBar.querySelectorAll('.social-tab-btn').forEach(function(b) {
+                    b.classList.remove('active');
+                });
+            }
+            btn.classList.add('active');
+
+            /* Hide all .social-tab-content siblings of the tab bar */
+            var parent = tabBar ? tabBar.parentElement : null;
+            if (parent) {
+                parent.querySelectorAll('.social-tab-content').forEach(function(c) {
+                    c.classList.remove('active');
+                });
+            }
+
+            /* Show the requested tab */
+            var target = document.getElementById(tabId);
+            if (target) { target.classList.add('active'); }
+        }
+
+        /* ---- Auto-reload every 5 min ---- */
+        setTimeout(function() { window.location.reload(); }, 300000);
     </script>
 </body>
 </html>

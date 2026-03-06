@@ -19,6 +19,15 @@ class StoryCategory(str, Enum):
     GAZA = "gaza"
     SWITZERLAND = "switzerland"
     FINANCE = "finance"
+    HEALTH = "health"
+    SCIENCE = "science"
+    CLIMATE = "climate"
+    GEOPOLITICS = "geopolitics"
+    CRYPTO = "crypto"
+    EUROPE = "europe"
+    SPORTS = "sports"
+    PHILOSOPHY = "philosophy"
+    NEUROSCIENCE = "neuroscience"
 
 def utc_now() -> datetime:
     """Return timezone-naive UTC datetime"""

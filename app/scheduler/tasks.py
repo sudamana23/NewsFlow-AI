@@ -154,6 +154,29 @@ class NewsScheduler:
                         if published_at and hasattr(published_at, 'tzinfo') and published_at.tzinfo:
                             published_at = published_at.astimezone(timezone.utc).replace(tzinfo=None)
                         
+                        # Map raw category strings to StoryCategory enum values
+                        CATEGORY_MAP = {
+                            "tech": "technology", "technology": "technology",
+                            "ai": "ai_data", "ai_data": "ai_data", "data": "ai_data",
+                            "swiss": "switzerland", "switzerland": "switzerland",
+                            "world": "world",
+                            "politics": "politics",
+                            "ukraine": "ukraine",
+                            "gaza": "gaza",
+                            "finance": "finance",
+                            "crypto": "crypto",
+                            "health": "health",
+                            "science": "science",
+                            "climate": "climate",
+                            "geopolitics": "geopolitics",
+                            "europe": "europe",
+                            "sports": "sports",
+                            "premier_league": "sports",
+                            "philosophy": "philosophy",
+                            "neuroscience": "neuroscience",
+                        }
+                        mapped_category = CATEGORY_MAP.get(str(category).lower(), "world") if category else None
+
                         # Create article record
                         article = Article(
                             url=article_data["url"],
@@ -162,7 +185,7 @@ class NewsScheduler:
                             summary=summary,
                             source=article_data["source"],
                             source_type=article_data["source_type"],
-                            category=category,  # Use AI-determined category
+                            category=mapped_category,
                             published_at=published_at,
                             engagement_score=article_data.get("engagement_score", 0.0),
                             is_processed=True
@@ -268,8 +291,17 @@ class NewsScheduler:
         selected = []
         max_per_category = 5 if digest_type in ["morning", "evening"] else 3
         
-        # Priority categories (updated to match new categorization)
-        priority_cats = ["ukraine", "gaza", "ai", "tech", "finance", "politics", "premier_league", "swiss", "world"]
+        # Priority categories in display order
+        priority_cats = [
+            "ukraine", "gaza", "geopolitics",
+            "ai_data", "technology",
+            "finance", "crypto",
+            "politics", "europe",
+            "health", "science", "climate",
+            "philosophy", "neuroscience",
+            "sports", "switzerland",
+            "world",
+        ]
         
         for cat in priority_cats:
             if cat in categories:

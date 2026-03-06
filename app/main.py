@@ -10,6 +10,8 @@ from typing import List, Optional
 import json
 import logging
 import pytz
+import httpx
+from bs4 import BeautifulSoup
 
 from app.database import get_async_session, create_db_and_tables, AsyncSessionLocal
 from app.models import Article, Digest, DigestArticle, StoryCategory
@@ -34,27 +36,145 @@ def convert_to_cet(dt):
     if dt is None:
         return None
     if dt.tzinfo is None:
-        # Assume UTC if no timezone info
         dt = dt.replace(tzinfo=pytz.UTC)
     return dt.astimezone(CET)
+
+_STOPWORDS = {
+    # Articles, prepositions, conjunctions
+    "the","a","an","in","on","of","to","for","and","or","is","are","was","were",
+    "be","been","being","have","has","had","do","does","did","will","would",
+    "could","should","may","might","can","with","at","by","from","as","it",
+    "its","this","that","these","those","not","but","if","than","then","so",
+    "up","out","new","over","into","about","after","before","between","more",
+    # Common headline words
+    "us","uk","eu","says","say","said","report","reports","how","why","what",
+    "who","when","where","amid","since","per","via","just","gets","want","make",
+    "here","your","their","they","them","some","much","very","well","will",
+    "first","last","also","still","back","over","after","says","come","goes",
+    # Reddit-specific noise
+    "thread","threads","part","time","year","years","week","month","daily",
+    "worldnews","subreddit","reddit","comments","upvotes","post","posts",
+    "news","world","today","days","hours","breaking","update","updates",
+    "watch","start","stop","look","like","need","take","know","tell","show",
+    "call","plan","plan","deal","move","rise","fall","hold","keep","push",
+}
+
+def _compute_trending_topics(titles: list, top_n: int = 20, min_count: int = 2) -> list:
+    """Compute top keywords from a list of article titles."""
+    from collections import Counter
+    import re
+    counts: Counter = Counter()
+    for title in titles:
+        words = re.findall(r"[a-zA-Z]{4,}", title.lower())
+        for w in words:
+            if w not in _STOPWORDS:
+                counts[w] += 1
+    return [{"word": w.title(), "count": c} for w, c in counts.most_common(top_n) if c >= min_count]
+
+# ── SEP cache ─────────────────────────────────────────────────────────────────
+_sep_cache: dict = {}          # keys: "entry", "fetched_at"
+_SEP_CACHE_TTL = timedelta(hours=2)
+
+async def fetch_sep_entry() -> dict | None:
+    """Fetch a random Stanford Encyclopedia of Philosophy entry (cached 2 h)."""
+    global _sep_cache
+    # Return cached entry if still fresh
+    if _sep_cache.get("entry") and _sep_cache.get("fetched_at"):
+        if datetime.utcnow() - _sep_cache["fetched_at"] < _SEP_CACHE_TTL:
+            return _sep_cache["entry"]
+
+    try:
+        async with httpx.AsyncClient(
+            follow_redirects=True,
+            timeout=10.0,
+            headers={"User-Agent": "NewsFlow-AI/1.0 (educational digest reader)"},
+        ) as client:
+            resp = await client.get("https://plato.stanford.edu/cgi-bin/encyclopedia/random")
+            if resp.status_code != 200:
+                return _sep_cache.get("entry")   # serve stale on failure
+
+            soup = BeautifulSoup(resp.text, "html.parser")
+
+            # Title — SEP uses <h1> with the entry name
+            title_el = (
+                soup.find("h1", id="entry-title")
+                or soup.find("h1")
+            )
+            title = title_el.get_text(strip=True) if title_el else "Philosophy"
+
+            # Preamble — the paragraph(s) before the Table of Contents
+            excerpt = ""
+            preamble = (
+                soup.find("div", id="preamble")
+                or soup.find("section", id="preamble")
+            )
+            if preamble:
+                first_p = preamble.find("p")
+                excerpt = first_p.get_text(strip=True) if first_p else ""
+            if not excerpt:
+                # Fallback: first <p> inside #main-text or #content
+                container = soup.find("div", id="main-text") or soup.find("div", id="content")
+                if container:
+                    first_p = container.find("p")
+                    excerpt = first_p.get_text(strip=True) if first_p else ""
+
+            # Keep excerpt to ~280 chars, cutting at a word boundary
+            if len(excerpt) > 280:
+                excerpt = excerpt[:280].rsplit(" ", 1)[0].rstrip(".,;:") + "…"
+
+            entry = {
+                "title": title,
+                "excerpt": excerpt,
+                "url": str(resp.url),
+            }
+            _sep_cache = {"entry": entry, "fetched_at": datetime.utcnow()}
+            logger.info(f"📚 SEP entry fetched: {title}")
+            return entry
+
+    except Exception as e:
+        logger.warning(f"⚠️ SEP fetch failed: {e}")
+        return _sep_cache.get("entry")   # serve stale on failure
+
+
+async def run_enum_migrations():
+    """Add new StoryCategory enum values - must run outside a transaction."""
+    import asyncpg
+    db_url = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+    # SQLAlchemy/SQLModel stores enums by Python attribute name (uppercase), not value
+    new_values = ["HEALTH", "SCIENCE", "CLIMATE", "GEOPOLITICS", "CRYPTO", "EUROPE", "SPORTS", "PHILOSOPHY", "NEUROSCIENCE"]
+    try:
+        conn = await asyncpg.connect(db_url)
+        for value in new_values:
+            try:
+                await conn.execute(f"ALTER TYPE storycategory ADD VALUE IF NOT EXISTS '{value}'")
+            except Exception:
+                pass
+        await conn.close()
+        logger.info("✅ DB enum migrations complete")
+    except Exception as e:
+        logger.warning(f"⚠️ DB enum migration skipped (non-critical): {e}")
+
 
 @app.on_event("startup")
 async def startup_event():
     """Initialize app on startup"""
     try:
         logger.info("🚀 Starting News Digest Agent...")
-        
+
         # Initialize database (critical)
         await create_db_and_tables()
         logger.info("✅ Database tables created")
-        
+
+        # Run enum migrations to add new category values
+        await run_enum_migrations()
+
         # Initialize Redis streams (non-critical)
         try:
             await news_stream.initialize()
             logger.info("✅ Redis streams initialized")
         except Exception as e:
             logger.warning(f"⚠️ Redis initialization failed (non-critical): {e}")
-        
+
         # Initialize scheduler (non-critical)
         try:
             from app.scheduler.tasks import scheduler
@@ -62,9 +182,9 @@ async def startup_event():
             logger.info("✅ Scheduler started")
         except Exception as e:
             logger.warning(f"⚠️ Scheduler initialization failed (non-critical): {e}")
-        
+
         logger.info("🎉 App initialized successfully!")
-        
+
     except Exception as e:
         logger.error(f"❌ Critical startup error: {e}")
         raise
@@ -104,12 +224,18 @@ async def read_digest(
             digest = None
 
         if not digest:
+            sep_entry = await fetch_sep_entry()
             return templates.TemplateResponse(
                 "digest.html",
                 {
                     "request": request,
                     "digest": None,
                     "categories": {},
+                    "hero_articles": [],
+                    "social_articles": [],
+                    "geopolitics_articles": [],
+                    "trending_topics": [],
+                    "sep_entry": sep_entry,
                     "message": "🚀 News Digest Agent is online! No digest yet. Check back soon.",
                     "is_deep_read": False
                 }
@@ -132,16 +258,105 @@ async def read_digest(
         for article, digest_article in rows:
             published_cet = convert_to_cet(article.published_at) if article.published_at else None
             item = {
-                "article": article,  # <-- matches digest.html usage
+                "article": article,
                 "published_cet": published_cet,
                 "position": digest_article.position,
                 "category_group": digest_article.category_group,
             }
-
             cat = article.category or "world"
             categories.setdefault(cat, []).append(item)
 
-        logger.info(f"📰 Serving digest with {len(rows)} articles across {len(categories)} categories")
+        # 4. Hero articles — top 5 by engagement from last 24h
+        since_24h = datetime.utcnow() - timedelta(hours=24)
+        hero_result = await db.execute(
+            select(Article)
+            .where(Article.scraped_at >= since_24h)
+            .where(Article.is_processed == True)
+            .order_by(Article.engagement_score.desc(), Article.scraped_at.desc())
+            .limit(5)
+        )
+        hero_articles = [
+            {
+                "title": a.title,
+                "url": a.url,
+                "source": a.source,
+                "summary": a.summary,
+                "category": a.category or "world",
+                "published_cet": convert_to_cet(a.published_at) if a.published_at else None,
+            }
+            for a in hero_result.scalars().all()
+        ]
+
+        # 5. Social articles — Reddit posts from last 24h
+        social_result = await db.execute(
+            select(Article)
+            .where(Article.source.like("r/%"))
+            .where(Article.scraped_at >= since_24h)
+            .order_by(Article.scraped_at.desc())
+            .limit(8)
+        )
+        social_articles = [
+            {
+                "title": a.title,
+                "url": a.url,
+                "source": a.source,
+                "published_cet": convert_to_cet(a.published_at) if a.published_at else None,
+            }
+            for a in social_result.scalars().all()
+        ]
+
+        # 6. Geopolitics articles — analysis/conflicts card
+        geo_result = await db.execute(
+            select(Article)
+            .where(Article.category == "geopolitics")
+            .where(Article.scraped_at >= since_24h)
+            .order_by(Article.scraped_at.desc())
+            .limit(6)
+        )
+        geopolitics_articles = [
+            {
+                "title": a.title,
+                "url": a.url,
+                "source": a.source,
+                "summary": a.summary,
+                "published_cet": convert_to_cet(a.published_at) if a.published_at else None,
+            }
+            for a in geo_result.scalars().all()
+        ]
+
+        # 7. Trending topics — word frequency from Reddit article titles
+        #    Use a 48-hour window and a low min-count so we get useful chips
+        #    even when reddit article volume is low.
+        since_48h = datetime.utcnow() - timedelta(hours=48)
+        reddit_titles_result = await db.execute(
+            select(Article.title)
+            .where(Article.source.like("r/%"))
+            .where(Article.scraped_at >= since_48h)
+            .limit(200)
+        )
+        reddit_titles = [row[0] for row in reddit_titles_result.all()]
+
+        # If we have too few Reddit titles, fall back to all sources
+        if len(reddit_titles) < 10:
+            all_titles_result = await db.execute(
+                select(Article.title)
+                .where(Article.scraped_at >= since_48h)
+                .limit(300)
+            )
+            trending_topics = _compute_trending_topics(
+                [row[0] for row in all_titles_result.all()], min_count=2
+            )
+        else:
+            trending_topics = _compute_trending_topics(reddit_titles, min_count=1)
+
+        # 8. SEP random philosophy entry
+        sep_entry = await fetch_sep_entry()
+
+        logger.info(
+            f"📰 Serving digest: {len(rows)} articles, {len(hero_articles)} hero, "
+            f"{len(social_articles)} social, {len(geopolitics_articles)} geo, "
+            f"{len(trending_topics)} trending, SEP={'yes' if sep_entry else 'no'}"
+        )
 
         return templates.TemplateResponse(
             "digest.html",
@@ -149,14 +364,18 @@ async def read_digest(
                 "request": request,
                 "digest": digest,
                 "digest_cet": digest_cet,
-                "categories": categories,   # <-- only categories, no articles[] root needed
+                "categories": categories,
+                "hero_articles": hero_articles,
+                "social_articles": social_articles,
+                "geopolitics_articles": geopolitics_articles,
+                "trending_topics": trending_topics,
+                "sep_entry": sep_entry,
                 "is_deep_read": digest.digest_type in ["morning", "evening"],
             }
         )
-           
+
     except Exception as e:
         logger.error(f"❌ Error in main route: {e}")
-        # Return a simple error page instead of crashing
         return templates.TemplateResponse(
             "digest.html",
             {
@@ -164,7 +383,12 @@ async def read_digest(
                 "digest": None,
                 "articles": [],
                 "categories": {},
-                "message": f"System is starting up. Please refresh in a moment.",
+                "hero_articles": [],
+                "social_articles": [],
+                "geopolitics_articles": [],
+                "trending_topics": [],
+                "sep_entry": _sep_cache.get("entry"),
+                "message": "System is starting up. Please refresh in a moment.",
                 "is_deep_read": False
             }
         )

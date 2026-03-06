@@ -193,25 +193,54 @@ science_sources:
     category: "science"
     enabled: true
 
-# remapped new categories into existing ones so frontend shows them
 climate_sources:
+  - name: "Carbon Brief"
+    url: "https://www.carbonbrief.org/feed"
+    category: "climate"
+    enabled: true
   - name: "Climate Home News"
     url: "https://www.climatechangenews.com/feed/"
-    category: "world"
+    category: "climate"
     enabled: true
   - name: "Inside Climate News"
     url: "https://insideclimatenews.org/feed/"
-    category: "world"
+    category: "climate"
+    enabled: true
+  - name: "Guardian Environment"
+    url: "https://www.theguardian.com/environment/rss"
+    category: "climate"
+    enabled: true
+
+health_sources:
+  - name: "WHO News"
+    url: "https://www.who.int/rss-feeds/news-english.xml"
+    category: "health"
+    enabled: true
+  - name: "STAT News"
+    url: "https://www.statnews.com/feed/"
+    category: "health"
+    enabled: true
+  - name: "MedPage Today"
+    url: "https://www.medpagetoday.com/rss/headlines.xml"
+    category: "health"
+    enabled: true
+  - name: "Fierce Healthcare"
+    url: "https://www.fiercehealthcare.com/rss/xml"
+    category: "health"
     enabled: true
 
 security_sources:
   - name: "Krebs on Security"
     url: "https://krebsonsecurity.com/feed/"
-    category: "tech"
+    category: "technology"
     enabled: true
   - name: "Bleeping Computer"
     url: "https://www.bleepingcomputer.com/feed/"
-    category: "tech"
+    category: "technology"
+    enabled: true
+  - name: "Dark Reading"
+    url: "https://www.darkreading.com/rss.xml"
+    category: "technology"
     enabled: true
 
 culture_sources:
@@ -222,6 +251,96 @@ culture_sources:
   - name: "New Yorker"
     url: "https://www.newyorker.com/feed/rss"
     category: "world"
+    enabled: true
+
+geopolitics_sources:
+  - name: "Foreign Affairs"
+    url: "https://www.foreignaffairs.com/rss.xml"
+    category: "geopolitics"
+    enabled: true
+  - name: "The Diplomat"
+    url: "https://thediplomat.com/feed/"
+    category: "geopolitics"
+    enabled: true
+  - name: "War on the Rocks"
+    url: "https://warontherocks.com/feed/"
+    category: "geopolitics"
+    enabled: true
+  - name: "Bellingcat"
+    url: "https://www.bellingcat.com/feed/"
+    category: "geopolitics"
+    enabled: true
+  - name: "Carnegie Endowment"
+    url: "https://carnegieendowment.org/rss/solr.xml"
+    category: "geopolitics"
+    enabled: true
+  - name: "RAND Corporation"
+    url: "https://www.rand.org/feeds/latest-rand.xml"
+    category: "geopolitics"
+    enabled: true
+  - name: "ISW - Institute for the Study of War"
+    url: "https://www.understandingwar.org/rss.xml"
+    category: "geopolitics"
+    enabled: true
+  - name: "Council on Foreign Relations"
+    url: "https://www.cfr.org/rss/all"
+    category: "geopolitics"
+    enabled: true
+  - name: "Lawfare"
+    url: "https://www.lawfaremedia.org/feed"
+    category: "geopolitics"
+    enabled: true
+  - name: "International Crisis Group"
+    url: "https://www.crisisgroup.org/rss.xml"
+    category: "geopolitics"
+    enabled: true
+
+philosophy_sources:
+  - name: "Aeon Magazine"
+    url: "https://aeon.co/feed.rss"
+    category: "philosophy"
+    enabled: true
+  - name: "Philosophy Now"
+    url: "https://philosophynow.org/rss.xml"
+    category: "philosophy"
+    enabled: true
+  - name: "The Marginalian"
+    url: "https://www.themarginalian.org/feed/"
+    category: "philosophy"
+    enabled: true
+  - name: "Notre Dame Philosophical Reviews"
+    url: "https://ndpr.nd.edu/rss/feed.xml"
+    category: "philosophy"
+    enabled: true
+  - name: "3 Quarks Daily"
+    url: "https://3quarksdaily.com/3quarksdaily/feed"
+    category: "philosophy"
+    enabled: true
+  - name: "Stanford Encyclopedia of Philosophy"
+    url: "https://plato.stanford.edu/rss/sep.xml"
+    category: "philosophy"
+    enabled: true
+
+neuroscience_sources:
+  - name: "Neuroscience News"
+    url: "https://neurosciencenews.com/feed/"
+    category: "neuroscience"
+    enabled: true
+  - name: "ScienceDaily Mind & Brain"
+    url: "https://www.sciencedaily.com/rss/mind_brain.xml"
+    category: "neuroscience"
+    enabled: true
+  - name: "Nature Neuroscience"
+    url: "https://www.nature.com/neuro.rss"
+    category: "neuroscience"
+    enabled: true
+  - name: "Frontiers in Neuroscience"
+    url: "https://www.frontiersin.org/journals/neuroscience/rss"
+    category: "neuroscience"
+    enabled: true
+  - name: "BrainFacts"
+    url: "https://www.brainfacts.org/rss/news"
+    category: "neuroscience"
     enabled: true
 
 government_sources:
@@ -277,7 +396,7 @@ reddit_sources:
     enabled: true
   - name: "r/geopolitics"
     subreddit: "geopolitics"
-    category: "politics"
+    category: "geopolitics"
     enabled: true
   - name: "r/Economics"
     subreddit: "Economics"
@@ -285,16 +404,41 @@ reddit_sources:
     enabled: true
   - name: "r/PremierLeague"
     subreddit: "PremierLeague"
-    category: "premier_league"
+    category: "sports"
     enabled: true
   - name: "r/soccer"
     subreddit: "soccer"
-    category: "premier_league"
+    category: "sports"
     enabled: true
   - name: "r/netsec"
     subreddit: "netsec"
-    category: "tech"
+    category: "technology"
     enabled: true
+  - name: "r/climatechange"
+    subreddit: "climatechange"
+    category: "climate"
+    enabled: true
+  - name: "r/europe"
+    subreddit: "europe"
+    category: "europe"
+    enabled: true
+  - name: "r/CryptoCurrency"
+    subreddit: "CryptoCurrency"
+    category: "crypto"
+    enabled: true
+  - name: "r/philosophy"
+    subreddit: "philosophy"
+    category: "philosophy"
+    enabled: true
+  - name: "r/neuroscience"
+    subreddit: "neuroscience"
+    category: "neuroscience"
+    enabled: true
+  - name: "r/consciousness"
+    subreddit: "consciousness"
+    category: "neuroscience"
+    enabled: true
+
 
 sports_sources:
   - name: "BBC Sport Football"

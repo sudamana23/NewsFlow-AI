@@ -157,7 +157,7 @@ source_manager = NewsSourceManager(settings.sources_config_path)
 
 # Backward compatibility: expose sources as before
 def get_mainstream_sources() -> List[str]:
-    """Get mainstream news sources including finance, science, government, sports, climate, security, and culture"""
+    """Get mainstream news sources across all non-tech categories"""
     urls = []
     for category in [
         "mainstream_sources",
@@ -168,6 +168,10 @@ def get_mainstream_sources() -> List[str]:
         "climate_sources",
         "security_sources",
         "culture_sources",
+        "geopolitics_sources",
+        "health_sources",
+        "philosophy_sources",
+        "neuroscience_sources",
     ]:
         sources = source_manager.get_enabled_sources(category)
         urls.extend([s["url"] for s in sources if "url" in s])

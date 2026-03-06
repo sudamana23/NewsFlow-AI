@@ -1,3 +1,4 @@
+import asyncio
 import redis.asyncio as aioredis
 import redis
 import json
@@ -16,38 +17,43 @@ class NewsStream:
         self.consumer_name = "processor-1"
     
     async def initialize(self):
-        """Create Redis connection and consumer group"""
-        try:
-            # Create async Redis connection
-            self.redis = aioredis.from_url(
-                settings.redis_url, 
-                encoding="utf-8", 
-                decode_responses=True
-            )
-            
-            # Test connection
-            await self.redis.ping()
-            logger.info("✅ Redis connection established")
-            
-            # Create consumer group
+        """Create Redis connection and consumer group, retrying if Redis is still loading"""
+        for attempt in range(6):
             try:
-                await self.redis.xgroup_create(
-                    self.stream_name, 
-                    self.consumer_group, 
-                    id="0", 
-                    mkstream=True
+                self.redis = aioredis.from_url(
+                    settings.redis_url,
+                    encoding="utf-8",
+                    decode_responses=True
                 )
-                logger.info(f"✅ Created Redis consumer group: {self.consumer_group}")
+                await self.redis.ping()
+                logger.info("✅ Redis connection established")
+                break
             except Exception as e:
-                if "BUSYGROUP" in str(e):
-                    logger.info(f"✅ Redis consumer group {self.consumer_group} already exists")
+                self.redis = None
+                if attempt < 5:
+                    logger.warning(f"Redis not ready (attempt {attempt+1}/6): {e} — retrying in 3s")
+                    await asyncio.sleep(3)
                 else:
-                    logger.warning(f"⚠️ Consumer group issue (non-critical): {e}")
-            
+                    logger.error(f"❌ Failed to initialize Redis after 6 attempts: {e}")
+                    return
+
+        if not self.redis:
+            return
+
+        # Create consumer group
+        try:
+            await self.redis.xgroup_create(
+                self.stream_name,
+                self.consumer_group,
+                id="0",
+                mkstream=True
+            )
+            logger.info(f"✅ Created Redis consumer group: {self.consumer_group}")
         except Exception as e:
-            logger.error(f"❌ Failed to initialize Redis: {e}")
-            # Don't fail startup - just log the error
-            self.redis = None
+            if "BUSYGROUP" in str(e):
+                logger.info(f"✅ Redis consumer group {self.consumer_group} already exists")
+            else:
+                logger.warning(f"⚠️ Consumer group issue (non-critical): {e}")
     
     def _serialize_article(self, article_data: Dict[str, Any]) -> Dict[str, str]:
         """Convert article data to Redis-compatible format (all strings)"""
@@ -114,6 +120,8 @@ class NewsStream:
     async def add_article(self, article_data: Dict[str, Any]):
         """Add article to the stream"""
         if not self.redis:
+            await self.initialize()
+        if not self.redis:
             logger.warning("Redis not available, skipping article add")
             return None
             
@@ -133,6 +141,8 @@ class NewsStream:
     
     async def read_articles(self, count: int = 10) -> List[Dict[str, Any]]:
         """Read unprocessed articles from stream"""
+        if not self.redis:
+            await self.initialize()
         if not self.redis:
             return []
             

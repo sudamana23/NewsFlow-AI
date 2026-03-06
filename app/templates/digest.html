@@ -2,63 +2,263 @@
 
 {% block title %}
 {% if digest %}
-    {{ digest.digest_type.title() }} Digest - {{ digest_cet.strftime('%B %d, %Y %H:%M') }} CET
+    {{ digest.digest_type.replace('_',' ').title() }} Digest — {{ digest_cet.strftime('%b %d, %Y') }}
 {% else %}
-    News Digest
+    NewsFlow-AI
+{% endif %}
+{% endblock %}
+
+{# ── Category metadata (display names + emoji) ── #}
+{% set cat_meta = {
+    'ukraine':      {'name': 'Ukraine',      'emoji': '🇺🇦'},
+    'gaza':         {'name': 'Gaza',         'emoji': '🇵🇸'},
+    'ai_data':      {'name': 'AI & Data',    'emoji': '🤖'},
+    'technology':   {'name': 'Technology',   'emoji': '💻'},
+    'finance':      {'name': 'Finance',      'emoji': '📈'},
+    'politics':     {'name': 'Politics',     'emoji': '🏛️'},
+    'health':       {'name': 'Health',       'emoji': '🏥'},
+    'science':      {'name': 'Science',      'emoji': '🔬'},
+    'climate':      {'name': 'Climate',      'emoji': '🌿'},
+    'geopolitics':  {'name': 'Geopolitics',  'emoji': '🌐'},
+    'crypto':       {'name': 'Crypto',       'emoji': '₿'},
+    'europe':       {'name': 'Europe',       'emoji': '🇪🇺'},
+    'sports':       {'name': 'Sports',       'emoji': '⚽'},
+    'switzerland':  {'name': 'Switzerland',  'emoji': '🇨🇭'},
+    'philosophy':   {'name': 'Philosophy',   'emoji': '🧠'},
+    'neuroscience': {'name': 'Neuroscience', 'emoji': '🔬'},
+    'world':        {'name': 'World',        'emoji': '🗺️'},
+} %}
+
+{# ── Filter pill bar ── #}
+{% block filter_bar %}
+{% if digest and categories %}
+<div class="filter-bar">
+    <div class="filter-bar-inner">
+        <button class="filter-pill active" onclick="filterCategory(this,'all')">All</button>
+        {% for category in categories.keys() %}
+        {% set meta = cat_meta.get(category, {'name': category.replace('_',' ').title(), 'emoji': '📰'}) %}
+        <button class="filter-pill" onclick="filterCategory(this,'{{ category }}')">
+            {{ meta.emoji }} {{ meta.name }}
+        </button>
+        {% endfor %}
+    </div>
+</div>
 {% endif %}
 {% endblock %}
 
 {% block content %}
 <div id="digest-content">
-    {% if digest %}
-    <!-- Digest Header -->
+{% if digest %}
+
+    {# ══════════════════════════════════════════════
+       DIGEST HEADER
+    ══════════════════════════════════════════════ #}
     <div class="digest-header">
-        <h1 class="digest-title">
-            {{ digest.digest_type.replace('_', ' ').title() }} Digest
-        </h1>
-        <div class="digest-meta">
-            {{ digest_cet.strftime('%A, %B %d, %Y at %H:%M') }} CET
-            {% if is_deep_read %}
-            <span style="background: #0066cc; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 8px;">DEEP READ</span>
-            {% endif %}
+        <div>
+            <h1 class="digest-title">
+                {{ digest.digest_type.replace('_',' ').title() }} Digest
+                {% if is_deep_read %}
+                <span style="background:var(--accent);color:white;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;vertical-align:middle;margin-left:6px;">DEEP READ</span>
+                {% endif %}
+            </h1>
+            <div class="digest-meta">{{ digest_cet.strftime('%A, %B %d, %Y · %H:%M') }} CET</div>
         </div>
-        <div class="digest-stats">
-            {{ digest.stories_count }} stories across {{ categories|length }} categories
-        </div>
+        <div class="digest-stats">{{ digest.stories_count }} stories · {{ categories|length }} categories</div>
     </div>
 
-    <!-- Categories Grid -->
+    {# ══════════════════════════════════════════════
+       SEP PHILOSOPHY HERO
+    ══════════════════════════════════════════════ #}
+    {% if sep_entry %}
+    <a href="{{ sep_entry.url }}" target="_blank" rel="noopener noreferrer" class="sep-hero">
+        <div class="sep-hero-inner">
+            <div class="sep-hero-glyph">🏺</div>
+            <div class="sep-hero-body">
+                <p class="sep-hero-label">Stanford Encyclopedia of Philosophy · Random Entry</p>
+                <h2 class="sep-hero-title">{{ sep_entry.title }}</h2>
+                {% if sep_entry.excerpt %}
+                <p class="sep-hero-excerpt">{{ sep_entry.excerpt }}</p>
+                {% endif %}
+                <span class="sep-hero-cta">Open full entry →</span>
+            </div>
+        </div>
+    </a>
+    {% endif %}
+
+    {# ══════════════════════════════════════════════
+       HERO SECTION — top stories
+    ══════════════════════════════════════════════ #}
+    {% if hero_articles %}
+    <section class="hero-section">
+        <div class="section-label">Top Stories</div>
+        <div class="hero-grid">
+            {% for article in hero_articles[:3] %}
+            {% set cls_map = {1:'hero-lead', 2:'hero-secondary', 3:'hero-tertiary'} %}
+            <a href="{{ article.url }}"
+               target="_blank"
+               rel="noopener noreferrer"
+               class="hero-card {{ cls_map.get(loop.index,'') }} hero-cat-{{ article.category }}">
+                <div class="hero-card-accent"></div>
+                <div class="hero-card-body">
+                    {% set meta = cat_meta.get(article.category, {'name': article.category, 'emoji': '📰'}) %}
+                    <div class="hero-card-tag">{{ meta.emoji }} {{ meta.name }}</div>
+                    <h2 class="hero-card-title">{{ article.title }}</h2>
+                    {% if article.summary %}
+                    <p class="hero-card-summary">{{ article.summary }}</p>
+                    {% endif %}
+                    <div class="hero-card-meta">
+                        <span class="hero-card-source">{{ article.source }}</span>
+                        {% if article.published_cet %}
+                        <span>· {{ article.published_cet.strftime('%H:%M') }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {# ══════════════════════════════════════════════
+       SPECIAL CARDS ROW — Social + Conflicts
+    ══════════════════════════════════════════════ #}
+    <div class="special-row">
+
+        {# ── Social Pulse card ── #}
+        <div class="special-card">
+            <div class="special-card-header">
+                <span class="special-card-title">🌐 Social Pulse</span>
+                <span class="special-card-badge">Reddit · Trending</span>
+            </div>
+
+            <div class="social-tabs">
+                <button class="social-tab-btn active" onclick="switchTab(this,'tab-reddit')">Reddit Hot</button>
+                <button class="social-tab-btn" onclick="switchTab(this,'tab-trending')">Trending Topics</button>
+            </div>
+
+            {# Reddit tab — real data #}
+            <div id="tab-reddit" class="social-tab-content active">
+                {% if social_articles %}
+                    {% for article in social_articles %}
+                    <div class="social-item">
+                        <span class="social-item-rank">{{ loop.index }}</span>
+                        <div class="social-item-content">
+                            <a href="{{ article.url }}"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               class="social-item-title">{{ article.title }}</a>
+                            <div class="social-item-meta">
+                                {{ article.source }}
+                                {% if article.published_cet %}
+                                · {{ article.published_cet.strftime('%H:%M') }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="social-placeholder">
+                        <div class="social-placeholder-icon">🔄</div>
+                        <p class="social-placeholder-text">Reddit posts will appear after the next refresh.</p>
+                        <p class="social-placeholder-sub">r/worldnews · r/technology · r/geopolitics · r/philosophy and more.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            {# Trending Topics tab — computed server-side from article titles #}
+            <div id="tab-trending" class="social-tab-content">
+                {% if trending_topics %}
+                <div style="padding: 14px 18px; display: flex; flex-wrap: wrap; gap: 7px;">
+                    {% for topic in trending_topics %}
+                    <span class="trending-chip" title="{{ topic.count }} mentions">
+                        {{ topic.word }}
+                        <span class="trending-chip-count">{{ topic.count }}</span>
+                    </span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                    <div class="social-placeholder">
+                        <div class="social-placeholder-icon">📊</div>
+                        <p class="social-placeholder-text">Trending topics will appear after articles are collected.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# ── Conflicts & Analysis card ── #}
+        <div class="special-card conflicts-card">
+            <div class="special-card-header">
+                <span class="special-card-title">🌍 Conflicts & Analysis</span>
+                <span class="special-card-badge">Expert sources</span>
+            </div>
+
+            {% if geopolitics_articles %}
+                {% for article in geopolitics_articles %}
+                <div class="article">
+                    <div class="article-indicator" style="background:var(--c-geopolitics)"></div>
+                    <div class="article-content">
+                        <h3 class="article-title">
+                            <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer">
+                                {{ article.title }}
+                            </a>
+                        </h3>
+                        {% if article.summary %}
+                        <p class="article-summary">{{ article.summary }}</p>
+                        {% endif %}
+                        <div class="article-meta">
+                            <span class="article-source">{{ article.source }}</span>
+                            {% if article.published_cet %}
+                            <span>· {{ article.published_cet.strftime('%H:%M') }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="social-placeholder">
+                    <div class="social-placeholder-icon">📡</div>
+                    <p class="social-placeholder-text">Analysis articles will appear here after the next refresh.</p>
+                    <p class="social-placeholder-sub">Sources: Foreign Affairs · The Diplomat · Bellingcat · War on the Rocks · RAND · ISW · CFR · Lawfare · ICG</p>
+                </div>
+            {% endif %}
+        </div>
+
+    </div>{# /special-row #}
+
+    {# ══════════════════════════════════════════════
+       CATEGORY GRID
+    ══════════════════════════════════════════════ #}
     <div class="categories-grid">
         {% for category, cat_articles in categories.items() %}
-        <div class="category-section category-{{ category }}">
+        {% set meta = cat_meta.get(category, {'name': category.replace('_',' ').title(), 'emoji': '📰'}) %}
+        <div class="category-section category-{{ category }}"
+             data-category="{{ category }}">
+
             <div class="section-header">
-                <div>
-                    {{ category.replace('_', ' ').title() }}
+                <div class="section-header-left">
+                    <span class="section-color-dot"></span>
+                    <span class="section-title">{{ meta.emoji }} {{ meta.name }}</span>
                 </div>
-                <span class="count">{{ cat_articles|length }}</span>
+                <span class="section-count">{{ cat_articles|length }}</span>
             </div>
-            
+
             {% for item in cat_articles %}
             {% set article = item.article %}
             <div class="article">
                 <div class="article-indicator"></div>
                 <div class="article-content">
                     <h3 class="article-title">
-                        <a href="{{ article.url }}" 
-                           target="_blank" 
-                           rel="noopener noreferrer">
-                            {{ article.title }}
-                        </a>
+                        <a href="{{ article.url }}"
+                           target="_blank"
+                           rel="noopener noreferrer">{{ article.title }}</a>
                     </h3>
-                    
                     {% if article.summary %}
                     <p class="article-summary">{{ article.summary }}</p>
                     {% endif %}
-                    
                     <div class="article-meta">
                         <span class="article-source">{{ article.source }}</span>
                         {% if item.published_cet %}
-                        <span class="article-time">{{ item.published_cet.strftime('%H:%M') }}</span>
+                        <span class="article-time">· {{ item.published_cet.strftime('%H:%M') }}</span>
                         {% endif %}
                         {% if article.engagement_score and article.engagement_score > 0 %}
                         <span class="article-engagement">{{ "%.1f"|format(article.engagement_score) }}</span>
@@ -67,28 +267,27 @@
                 </div>
             </div>
             {% endfor %}
+
         </div>
         {% endfor %}
     </div>
 
-    {% else %}
-    <!-- No Digest Available -->
+{% else %}
+    {# ── No digest state ── #}
     <div class="no-digest">
         <div class="no-digest-icon">📰</div>
         <h2 class="no-digest-title">No Digest Available</h2>
         <p class="no-digest-message">{{ message }}</p>
-        <a href="/refresh" class="refresh-btn-alt">
-            🔄 Collect News Now
-        </a>
+        <a href="/refresh" class="refresh-btn-alt">↻ Collect News Now</a>
     </div>
-    {% endif %}
+{% endif %}
 </div>
 
 <!-- Footer -->
 <div class="footer">
-    Auto-refresh every 5 minutes • 
-    <a href="/archive">View Archive</a> • 
-    <a href="/debug/status">System Status</a>
+    Auto-refresh every 5 min ·
+    <a href="/archive">Archive</a> ·
+    <a href="/debug/status">Status</a>
 </div>
 
 {% endblock %}
